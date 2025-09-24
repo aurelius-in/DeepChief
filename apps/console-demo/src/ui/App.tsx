@@ -21,6 +21,17 @@ const demoApi = {
     // Purely client-side display; mimic success
     return { valid: true }
   },
+  async listMatches() {
+    const r = await fetch('./demo_state.json')
+    const j = await r.json()
+    return j.matches ?? []
+  },
+  async runIngest() {
+    return { ok: true }
+  },
+  async runReconciler() {
+    return { matched: (await this.listMatches()).length }
+  },
 }
 
 export function App() {

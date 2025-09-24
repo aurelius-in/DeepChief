@@ -17,6 +17,18 @@ const api = {
     const r = await fetch('/api/receipts/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) })
     return r.json()
   },
+  async listMatches() {
+    const r = await fetch('/api/matches')
+    return r.json()
+  },
+  async runIngest() {
+    const r = await fetch('/ingest/mock', { method: 'POST' })
+    return r.json()
+  },
+  async runReconciler() {
+    const r = await fetch('/agents/auto_reconciler/run', { method: 'POST' })
+    return r.json()
+  },
 }
 
 export function App() {

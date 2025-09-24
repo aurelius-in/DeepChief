@@ -10,22 +10,23 @@ const colors = {
   accent: '#57a6ff',
 }
 
-type State = { why: any, gl: any[], bank: any[] }
+type State = { why: any, gl: any[], bank: any[], matches: any[] }
 
 export function ConsoleView({ api }: { api: Api }) {
-  const [state, setState] = useState<State>({ why: {}, gl: [], bank: [] })
+  const [state, setState] = useState<State>({ why: {}, gl: [], bank: [], matches: [] })
   const [verifyForm, setVerifyForm] = useState<ReceiptVerifyRequest>({ payload_hash_b64: '', signature_b64: '', public_key_b64: '' })
   const [verifyResult, setVerifyResult] = useState<string>('')
   const [kpi, setKpi] = useState<any>(null)
 
   useEffect(() => {
     ;(async () => {
-      const [why, gl, bank] = await Promise.all([
+      const [why, gl, bank, matches] = await Promise.all([
         api.getWhyCard(),
         api.listGlEntries(),
         api.listBankTxns(),
+        api.listMatches(),
       ])
-      setState({ why, gl, bank })
+      setState({ why, gl, bank, matches })
       try {
         const res = await fetch('/api/kpi/close_to_cash')
         if (res.ok) setKpi(await res.json())
@@ -70,6 +71,13 @@ export function ConsoleView({ api }: { api: Api }) {
           {verifyResult && <p>Result: {verifyResult}</p>}
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Actions</h2>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
+            <button onClick={async () => { await api.runReconciler(); location.reload() }}>Run Reconciler</button>
+          </div>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>GL Entries</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -112,6 +120,29 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.account_ref}</td>
                   <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
                   <td>{r.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Matches</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">GL Entry</th>
+                <th align="left">Bank Txn</th>
+                <th align="right">Confidence</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.matches.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.gl_entry_id}</td>
+                  <td>{r.bank_txn_id}</td>
+                  <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>

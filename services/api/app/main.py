@@ -6,6 +6,7 @@ from .routers import receipts
 from .routers import ingest
 from .routers import agents
 from .routers import kpi
+from .routers import matches
 
 
 def create_app() -> FastAPI:
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
     application.include_router(ingest.router)
     application.include_router(agents.router)
     application.include_router(kpi.router)
+    application.include_router(matches.router)
 
     return application
 

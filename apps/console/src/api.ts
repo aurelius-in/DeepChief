@@ -9,6 +9,9 @@ export type Api = {
   listGlEntries(): Promise<any[]>
   listBankTxns(): Promise<any[]>
   verifyReceipt(req: ReceiptVerifyRequest): Promise<{ valid: boolean }>
+  listMatches(): Promise<any[]>
+  runIngest(): Promise<any>
+  runReconciler(): Promise<any>
 }
 
 

@@ -23,6 +23,10 @@
     { "id": "bnk_1", "account_ref": "Cash", "amount": 900.25, "date": "2025-08-02" }
   ],
   "kpi": { "auto_match_rate": 62.5, "gl_count": 3, "bank_count": 2, "matched_count": 2 }
+  ,
+  "matches": [
+    { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" }
+  ]
 }
 
 
