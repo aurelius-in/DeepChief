@@ -57,6 +57,16 @@ Run tests
 pytest -q
 (console) cd apps/console && npm i && npm test
 
+Run flow (Console)
+- Click Run Ingest, then Run Reconciler
+- View Matches and KPIs
+- Verify receipts with payload/signature/public key
+
+Docs demo (GitHub Pages)
+- Build: cd apps/console-demo && npm i && npm run build
+- Output goes to docs/ with 404.html SPA fallback
+- Commit and push to publish via GitHub Pages
+
 Receipts
 - Payload hash: sha256(canonical_json(payload)) (base64)
 - signed_hash: ed25519_sign(payload_hash)

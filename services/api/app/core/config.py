@@ -12,6 +12,8 @@ class Settings(BaseModel):
     jwt_secret: str = os.getenv("JWT_SECRET", "change_me")
     env: str = os.getenv("ENV", "local")
     receipt_signing_private_key: str | None = os.getenv("RECEIPT_SIGNING_PRIVATE_KEY")
+    erp_provider: str = os.getenv("ERP_PROVIDER", "netsuite_mock")
+    bank_provider: str = os.getenv("BANK_PROVIDER", "bank_mock")
 
 
 settings = Settings()

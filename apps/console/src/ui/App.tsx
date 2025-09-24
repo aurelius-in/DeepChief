@@ -22,11 +22,11 @@ const api = {
     return r.json()
   },
   async runIngest() {
-    const r = await fetch('/ingest/mock', { method: 'POST' })
+    const r = await fetch('/api/ingest/mock', { method: 'POST' })
     return r.json()
   },
   async runReconciler() {
-    const r = await fetch('/agents/auto_reconciler/run', { method: 'POST' })
+    const r = await fetch('/api/agents/auto_reconciler/run', { method: 'POST' })
     return r.json()
   },
 }
