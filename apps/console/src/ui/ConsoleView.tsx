@@ -58,6 +58,9 @@ export function ConsoleView({ api }: { api: Api }) {
               <div>GL: {kpi.gl_count}</div>
               <div>Bank: {kpi.bank_count}</div>
               <div>Matched: {kpi.matched_count}</div>
+              <div>| Spend Issues: {(kpi_spend as any)?.issues_total ?? '-'}</div>
+              <div>Duplicates: {(kpi_spend as any)?.duplicates ?? '-'}</div>
+              <div>SaaS: {(kpi_spend as any)?.saas ?? '-'}</div>
             </div>
           </section>
         )}

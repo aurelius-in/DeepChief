@@ -77,6 +77,10 @@ const api = {
     const r = await fetch('/api/spend/saas/run', { method: 'POST' })
     return r.json()
   },
+  async getKpiSpend() {
+    const r = await fetch('/api/kpi/spend')
+    return r.json()
+  },
 }
 
 export function App() {

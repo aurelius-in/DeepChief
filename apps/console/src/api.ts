@@ -24,6 +24,7 @@ export type Api = {
   listSpend(): Promise<any[]>
   runDuplicate(): Promise<any>
   runSaas(): Promise<any>
+  getKpiSpend(): Promise<any>
 }
 
 

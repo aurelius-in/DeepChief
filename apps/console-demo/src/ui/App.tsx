@@ -68,6 +68,11 @@ const demoApi = {
   },
   async runDuplicate() { return { ok: true } },
   async runSaas() { return { ok: true } },
+  async getKpiSpend() {
+    const r = await fetch('./demo_state.json')
+    const j = await r.json()
+    return j.kpi_spend ?? { issues_total: 0, duplicates: 0, saas: 0 }
+  },
 }
 
 export function App() {
