@@ -1,8 +1,8 @@
 # DeepChief — Finance Autonomy OS
 
 <p align="center">
-  <img src="dc-150.png" alt="Logo" width="25%" />
-  <img src="wordmark_dc.png" alt="Wordmark" width="75%" />
+  <img src="dc-150.png" alt="Logo" width="10%" />
+  <img src="wordmark_dc.png" alt="Wordmark" width="60%" />
 </p>
 
 **One-liner:** Close continuously, control automatically, explain every number, and turn cash faster — with receipts.
