@@ -1,0 +1,27 @@
+{
+  "whyCard": {
+    "policy": "CTRL_ApprovalThreshold",
+    "inputs": { "je_id": "JE2024-0001", "amount_abs": 35000, "created_by": "user1" },
+    "tools_used": ["rule-engine"],
+    "result": { "flag": "approval_required", "notify": "controller" },
+    "receipt": {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "sha256_b64": "c2hhMjU2LWJhc2U2NA==",
+      "signed_hash_b64": "c2lnbmF0dXJlLWJhc2U2NA==",
+      "public_key_b64": "cHVibGljLWtleS1iYXNlNjQ=",
+      "payload_url": "./receipts/00000000-0000-0000-0000-000000000001.json",
+      "created_at": "2025-09-24T00:00:00Z"
+    }
+  },
+  "gl": [
+    { "id": "gl_0_cash", "entity_id": "E1", "account": "Cash", "amount": -1234.56, "date": "2025-08-01" },
+    { "id": "gl_0_ar", "entity_id": "E1", "account": "AR", "amount": 2200.00, "date": "2025-08-01" },
+    { "id": "gl_1_cash", "entity_id": "E1", "account": "Cash", "amount": 900.25, "date": "2025-08-02" }
+  ],
+  "bank": [
+    { "id": "bnk_0", "account_ref": "Cash", "amount": -1234.56, "date": "2025-08-01" },
+    { "id": "bnk_1", "account_ref": "Cash", "amount": 900.25, "date": "2025-08-02" }
+  ]
+}
+
+
