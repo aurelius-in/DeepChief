@@ -1,4 +1,8 @@
 # DeepChief — Finance Autonomy OS
+<p align="center">
+  <img src="dc-150.png" alt="Logo" width="25%" />
+  <img src="wordmark_dc.png" alt="Wordmark" width="75%" />
+</p>
 
 <img src="dc-150.png" alt="DeepChief logo" width="150" />
 
