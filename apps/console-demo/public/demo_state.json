@@ -36,6 +36,28 @@
       "receipt_id": "00000000-0000-0000-0000-000000000002"
     }
   ]
+  ,
+  "flux": [
+    {
+      "entity_id": "E1",
+      "account": "AR",
+      "period": "2025-08",
+      "drivers": { "volume": 0.6, "price": 0.3, "fx": 0.1 },
+      "narrative": "Variance driven by volume and price in 2025-08",
+      "receipt_id": "00000000-0000-0000-0000-000000000003"
+    }
+  ],
+  "forecast": [
+    {
+      "period": "2025-09",
+      "params": { "ar_curve_days": [0.5, 0.3, 0.2], "ap_curve_days": [0.6, 0.3, 0.1] },
+      "outputs": { "cash_buffer_days": 45 },
+      "receipt_id": "00000000-0000-0000-0000-000000000004"
+    }
+  ],
+  "exceptions": [
+    { "id": "ex_1", "entity_id": "E1", "type": "recon_break", "status": "open", "assignee": null, "receipt_id": "00000000-0000-0000-0000-000000000005" }
+  ]
 }
 
 

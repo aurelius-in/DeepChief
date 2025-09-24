@@ -29,6 +29,42 @@ const api = {
     const r = await fetch('/api/agents/auto_reconciler/run', { method: 'POST' })
     return r.json()
   },
+  async getKpiCloseToCash() {
+    const r = await fetch('/api/kpi/close_to_cash')
+    return r.json()
+  },
+  async listControlsLatest() {
+    const r = await fetch('/api/controls/latest')
+    return r.json()
+  },
+  async runControls() {
+    const r = await fetch('/api/controls/run', { method: 'POST' })
+    return r.json()
+  },
+  async listFlux() {
+    const r = await fetch('/api/flux')
+    return r.json()
+  },
+  async runFlux() {
+    const r = await fetch('/api/agents/flux/run', { method: 'POST' })
+    return r.json()
+  },
+  async listForecast() {
+    const r = await fetch('/api/forecast')
+    return r.json()
+  },
+  async runForecast() {
+    const r = await fetch('/api/agents/forecast/run', { method: 'POST' })
+    return r.json()
+  },
+  async listExceptions() {
+    const r = await fetch('/api/exceptions')
+    return r.json()
+  },
+  async runExceptionTriage() {
+    const r = await fetch('/api/agents/exception_triage/run', { method: 'POST' })
+    return r.json()
+  },
 }
 
 export function App() {

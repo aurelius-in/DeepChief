@@ -18,6 +18,9 @@ export function ConsoleView({ api }: { api: Api }) {
   const [verifyResult, setVerifyResult] = useState<string>('')
   const [kpi, setKpi] = useState<any>(null)
   const [controls, setControls] = useState<any[]>([])
+  const [flux, setFlux] = useState<any[]>([])
+  const [forecast, setForecast] = useState<any[]>([])
+  const [exceptions, setExceptions] = useState<any[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -28,14 +31,11 @@ export function ConsoleView({ api }: { api: Api }) {
         api.listMatches(),
       ])
       setState({ why, gl, bank, matches })
-      try {
-        const res = await fetch('/api/kpi/close_to_cash')
-        if (res.ok) setKpi(await res.json())
-      } catch {}
-      try {
-        const res2 = await fetch('/api/controls/latest')
-        if (res2.ok) setControls(await res2.json())
-      } catch {}
+      try { setKpi(await api.getKpiCloseToCash()) } catch {}
+      try { setControls(await api.listControlsLatest()) } catch {}
+      try { setFlux(await api.listFlux()) } catch {}
+      try { setForecast(await api.listForecast()) } catch {}
+      try { setExceptions(await api.listExceptions()) } catch {}
     })()
   }, [api])
 
@@ -80,7 +80,10 @@ export function ConsoleView({ api }: { api: Api }) {
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
             <button onClick={async () => { await api.runReconciler(); location.reload() }}>Run Reconciler</button>
-            <button onClick={async () => { await fetch('/api/controls/run', { method: 'POST' }); location.reload() }}>Run Controls</button>
+            <button onClick={async () => { await api.runControls(); location.reload() }}>Run Controls</button>
+            <button onClick={async () => { await api.runFlux(); location.reload() }}>Run Flux</button>
+            <button onClick={async () => { await api.runForecast(); location.reload() }}>Run Forecast</button>
+            <button onClick={async () => { await api.runExceptionTriage(); location.reload() }}>Run Exception Triage</button>
           </div>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
@@ -103,6 +106,79 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.account}</td>
                   <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
                   <td>{r.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Exceptions</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">ID</th>
+                <th align="left">Type</th>
+                <th align="left">Status</th>
+                <th align="left">Assignee</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exceptions.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.id}</td>
+                  <td>{r.type}</td>
+                  <td>{r.status}</td>
+                  <td>{r.assignee || '-'}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Flux</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Entity</th>
+                <th align="left">Account</th>
+                <th align="left">Period</th>
+                <th align="left">Drivers</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flux.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.entity_id}</td>
+                  <td>{r.account}</td>
+                  <td>{r.period}</td>
+                  <td>{JSON.stringify(r.drivers)}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Forecast</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Period</th>
+                <th align="left">Params</th>
+                <th align="left">Outputs</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {forecast.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.period}</td>
+                  <td>{JSON.stringify(r.params)}</td>
+                  <td>{JSON.stringify(r.outputs)}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>
