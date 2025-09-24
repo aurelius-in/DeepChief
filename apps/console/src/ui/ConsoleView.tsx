@@ -16,6 +16,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [state, setState] = useState<State>({ why: {}, gl: [], bank: [] })
   const [verifyForm, setVerifyForm] = useState<ReceiptVerifyRequest>({ payload_hash_b64: '', signature_b64: '', public_key_b64: '' })
   const [verifyResult, setVerifyResult] = useState<string>('')
+  const [kpi, setKpi] = useState<any>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -25,6 +26,10 @@ export function ConsoleView({ api }: { api: Api }) {
         api.listBankTxns(),
       ])
       setState({ why, gl, bank })
+      try {
+        const res = await fetch('/api/kpi/close_to_cash')
+        if (res.ok) setKpi(await res.json())
+      } catch {}
     })()
   }, [api])
 
@@ -37,6 +42,17 @@ export function ConsoleView({ api }: { api: Api }) {
         <h1 style={{ margin: 0 }}>Console</h1>
       </header>
       <main style={{ maxWidth: 1200, margin: '24px auto', padding: '0 16px' }}>
+        {kpi && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+            <h2 style={{ marginTop: 0 }}>KPIs</h2>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <div>Auto Match Rate: {kpi.auto_match_rate}%</div>
+              <div>GL: {kpi.gl_count}</div>
+              <div>Bank: {kpi.bank_count}</div>
+              <div>Matched: {kpi.matched_count}</div>
+            </div>
+          </section>
+        )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Why Card</h2>
           <JsonView data={sample} style={darkStyles} />

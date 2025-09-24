@@ -21,7 +21,8 @@
   "bank": [
     { "id": "bnk_0", "account_ref": "Cash", "amount": -1234.56, "date": "2025-08-01" },
     { "id": "bnk_1", "account_ref": "Cash", "amount": 900.25, "date": "2025-08-02" }
-  ]
+  ],
+  "kpi": { "auto_match_rate": 62.5, "gl_count": 3, "bank_count": 2, "matched_count": 2 }
 }
 
 
