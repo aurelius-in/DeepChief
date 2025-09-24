@@ -17,6 +17,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [verifyForm, setVerifyForm] = useState<ReceiptVerifyRequest>({ payload_hash_b64: '', signature_b64: '', public_key_b64: '' })
   const [verifyResult, setVerifyResult] = useState<string>('')
   const [kpi, setKpi] = useState<any>(null)
+  const [controls, setControls] = useState<any[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -30,6 +31,10 @@ export function ConsoleView({ api }: { api: Api }) {
       try {
         const res = await fetch('/api/kpi/close_to_cash')
         if (res.ok) setKpi(await res.json())
+      } catch {}
+      try {
+        const res2 = await fetch('/api/controls/latest')
+        if (res2.ok) setControls(await res2.json())
       } catch {}
     })()
   }, [api])
@@ -75,6 +80,7 @@ export function ConsoleView({ api }: { api: Api }) {
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
             <button onClick={async () => { await api.runReconciler(); location.reload() }}>Run Reconciler</button>
+            <button onClick={async () => { await fetch('/api/controls/run', { method: 'POST' }); location.reload() }}>Run Controls</button>
           </div>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
@@ -142,6 +148,29 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.gl_entry_id}</td>
                   <td>{r.bank_txn_id}</td>
                   <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Controls</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Control</th>
+                <th align="left">Window</th>
+                <th align="left">Findings</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {controls.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.control_key}</td>
+                  <td>{r.window_start} → {r.window_end}</td>
+                  <td>{Array.isArray(r.findings?.items) ? r.findings.items.length : 0}</td>
                   <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}

@@ -26,6 +26,15 @@
   ,
   "matches": [
     { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" }
+  ],
+  "controls": [
+    {
+      "control_key": "CTRL_ApprovalThreshold",
+      "window_start": "2025-08-01",
+      "window_end": "2025-09-24",
+      "findings": { "items": [ { "je_id": "gl_0_ar", "amount_abs": 35000, "flag": "approval_required" } ] },
+      "receipt_id": "00000000-0000-0000-0000-000000000002"
+    }
   ]
 }
 
