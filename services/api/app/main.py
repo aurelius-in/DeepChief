@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import health
 from .routers import receipts
+from .routers import ingest
+from .routers import agents
+from .routers import kpi
 
 
 def create_app() -> FastAPI:
@@ -18,6 +21,9 @@ def create_app() -> FastAPI:
 
     application.include_router(health.router)
     application.include_router(receipts.router, prefix="/receipts", tags=["receipts"])
+    application.include_router(ingest.router)
+    application.include_router(agents.router)
+    application.include_router(kpi.router)
 
     return application
 

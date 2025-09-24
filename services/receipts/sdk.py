@@ -11,6 +11,8 @@ from nacl import exceptions as nacl_exceptions
 from nacl.encoding import RawEncoder
 
 from services.api.app.core.config import settings
+from services.api.app.core.db import SessionLocal
+from services.api.app.models.evidence_receipt import EvidenceReceipt
 
 
 def canonical_json(obj: Any) -> bytes:
@@ -116,6 +118,7 @@ def create_receipt(payload: Dict[str, Any], kind: str, links: Dict[str, Any]) ->
     }
     # In MVP, return header. Persisting header to DB added in later step.
     _persist_header_stub(receipt_id, header)
+    _persist_header_db(header)
     return header
 
 
@@ -128,5 +131,22 @@ def _persist_header_stub(receipt_id: str, header: Dict[str, Any]) -> None:
 
 def get_receipt_header(receipt_id: str) -> Optional[Dict[str, Any]]:
     return _HEADER_KV.get(receipt_id)
+
+
+def _persist_header_db(header: Dict[str, Any]) -> None:
+    sess = SessionLocal()
+    try:
+        if not sess.get(EvidenceReceipt, header["id"]):
+            sess.add(EvidenceReceipt(
+                id=header["id"],
+                sha256_b64=header["sha256_b64"],
+                signed_hash_b64=header["signed_hash_b64"],
+                public_key_b64=header["public_key_b64"],
+                payload_url=header["payload_url"],
+                created_at=datetime.fromisoformat(header["created_at"].replace('Z', '+00:00')),
+            ))
+            sess.commit()
+    finally:
+        sess.close()
 
 

@@ -1,0 +1,9 @@
+{
+  "policy": "CTRL_ApprovalThreshold",
+  "inputs": { "je_id": "JE2024-0001", "amount_abs": 35000, "created_by": "user1" },
+  "outputs": { "flag": "approval_required", "notify": "controller" },
+  "tools_used": ["rule-engine"],
+  "links": { "entity_id": "E1" }
+}
+
+
