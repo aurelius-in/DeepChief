@@ -10,26 +10,34 @@ const colors = {
   accent: '#57a6ff',
 }
 
-type State = { why: any, gl: any[], bank: any[] }
+type State = { why: any, gl: any[], bank: any[], matches: any[] }
 
 export function ConsoleView({ api }: { api: Api }) {
-  const [state, setState] = useState<State>({ why: {}, gl: [], bank: [] })
+  const [state, setState] = useState<State>({ why: {}, gl: [], bank: [], matches: [] })
   const [verifyForm, setVerifyForm] = useState<ReceiptVerifyRequest>({ payload_hash_b64: '', signature_b64: '', public_key_b64: '' })
   const [verifyResult, setVerifyResult] = useState<string>('')
   const [kpi, setKpi] = useState<any>(null)
+  const [controls, setControls] = useState<any[]>([])
+  const [flux, setFlux] = useState<any[]>([])
+  const [forecast, setForecast] = useState<any[]>([])
+  const [exceptions, setExceptions] = useState<any[]>([])
+  const [spend, setSpend] = useState<any[]>([])
 
   useEffect(() => {
     ;(async () => {
-      const [why, gl, bank] = await Promise.all([
+      const [why, gl, bank, matches] = await Promise.all([
         api.getWhyCard(),
         api.listGlEntries(),
         api.listBankTxns(),
+        api.listMatches(),
       ])
-      setState({ why, gl, bank })
-      try {
-        const res = await fetch('/api/kpi/close_to_cash')
-        if (res.ok) setKpi(await res.json())
-      } catch {}
+      setState({ why, gl, bank, matches })
+      try { setKpi(await api.getKpiCloseToCash()) } catch {}
+      try { setControls(await api.listControlsLatest()) } catch {}
+      try { setFlux(await api.listFlux()) } catch {}
+      try { setForecast(await api.listForecast()) } catch {}
+      try { setExceptions(await api.listExceptions()) } catch {}
+      try { setSpend(await api.listSpend()) } catch {}
     })()
   }, [api])
 
@@ -70,6 +78,19 @@ export function ConsoleView({ api }: { api: Api }) {
           {verifyResult && <p>Result: {verifyResult}</p>}
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Actions</h2>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
+            <button onClick={async () => { await api.runReconciler(); location.reload() }}>Run Reconciler</button>
+            <button onClick={async () => { await api.runControls(); location.reload() }}>Run Controls</button>
+            <button onClick={async () => { await api.runFlux(); location.reload() }}>Run Flux</button>
+            <button onClick={async () => { await api.runForecast(); location.reload() }}>Run Forecast</button>
+            <button onClick={async () => { await api.runExceptionTriage(); location.reload() }}>Run Exception Triage</button>
+            <button onClick={async () => { await api.runDuplicate(); location.reload() }}>Run Duplicate Sentinel</button>
+            <button onClick={async () => { await api.runSaas(); location.reload() }}>Run SaaS Optimizer</button>
+          </div>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>GL Entries</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -94,6 +115,102 @@ export function ConsoleView({ api }: { api: Api }) {
             </tbody>
           </table>
         </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Spend</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Type</th>
+                <th align="left">Vendor</th>
+                <th align="right">Amount</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {spend.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.type}</td>
+                  <td>{r.vendor || '-'}</td>
+                  <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Exceptions</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">ID</th>
+                <th align="left">Type</th>
+                <th align="left">Status</th>
+                <th align="left">Assignee</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exceptions.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.id}</td>
+                  <td>{r.type}</td>
+                  <td>{r.status}</td>
+                  <td>{r.assignee || '-'}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Flux</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Entity</th>
+                <th align="left">Account</th>
+                <th align="left">Period</th>
+                <th align="left">Drivers</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flux.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.entity_id}</td>
+                  <td>{r.account}</td>
+                  <td>{r.period}</td>
+                  <td>{JSON.stringify(r.drivers)}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Forecast</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Period</th>
+                <th align="left">Params</th>
+                <th align="left">Outputs</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {forecast.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.period}</td>
+                  <td>{JSON.stringify(r.params)}</td>
+                  <td>{JSON.stringify(r.outputs)}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8 }}>
           <h2 style={{ marginTop: 0 }}>Bank Transactions</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -112,6 +229,52 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.account_ref}</td>
                   <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
                   <td>{r.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Matches</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">GL Entry</th>
+                <th align="left">Bank Txn</th>
+                <th align="right">Confidence</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.matches.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.gl_entry_id}</td>
+                  <td>{r.bank_txn_id}</td>
+                  <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Controls</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Control</th>
+                <th align="left">Window</th>
+                <th align="left">Findings</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {controls.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.control_key}</td>
+                  <td>{r.window_start} → {r.window_end}</td>
+                  <td>{Array.isArray(r.findings?.items) ? r.findings.items.length : 0}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>

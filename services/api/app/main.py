@@ -6,6 +6,12 @@ from .routers import receipts
 from .routers import ingest
 from .routers import agents
 from .routers import kpi
+from .routers import matches
+from .routers import controls
+from .routers import flux as flux_router
+from .routers import forecast as forecast_router
+from .routers import exceptions as exceptions_router
+from .routers import spend as spend_router
 
 
 def create_app() -> FastAPI:
@@ -24,6 +30,12 @@ def create_app() -> FastAPI:
     application.include_router(ingest.router)
     application.include_router(agents.router)
     application.include_router(kpi.router)
+    application.include_router(matches.router)
+    application.include_router(controls.router)
+    application.include_router(flux_router.router)
+    application.include_router(forecast_router.router)
+    application.include_router(exceptions_router.router)
+    application.include_router(spend_router.router)
 
     return application
 

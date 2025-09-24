@@ -1,0 +1,6 @@
+{
+  "control": "CTRL_ApprovalThreshold",
+  "findings": [ { "je_id": "gl_0_ar", "amount_abs": 35000, "flag": "approval_required" } ]
+}
+
+
