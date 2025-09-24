@@ -36,6 +36,13 @@ RECEIPT_SIGNING_PRIVATE_KEY=
 RECEIPT_SIGNING_PUBLIC_KEY=
 JWT_SECRET=change_me
 ENV=local
+ERP_PROVIDER=netsuite_mock
+BANK_PROVIDER=bank_mock
+FEATURE_RECONCILE=1
+FEATURE_CONTROLS=1
+FEATURE_FLUX=1
+FEATURE_FORECAST=1
+SCHEDULER_INTERVAL_SEC=300
 
 Generate signing keys
 python scripts/generate_keys.py
@@ -52,6 +59,7 @@ python scripts/load_policies.py policies/examples
 Dev servers
 - API: http://localhost:8080/docs
 - Console: http://localhost:5173
+ - Scheduler: container logs stream agent runs
 
 Run tests
 pytest -q
@@ -81,6 +89,7 @@ Quick Commands
 - Load policies: python scripts/load_policies.py policies/examples
 - Tests: pytest -q
 - Console: cd apps/console && npm i && npm run dev
+ - Build demo site: cd apps/console-demo && npm i && npm run build
 
 Console Design
 - Use color scheme inspired by dc-150.png; headings display wordmark_dc.png
