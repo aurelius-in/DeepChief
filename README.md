@@ -50,7 +50,7 @@ Finance teams juggle spreadsheets, task trackers, screenshots, and point tools. 
 
 ```mermaid
 flowchart LR
-  subgraph Governance Spine
+  subgraph "Governance Spine"
     DQ[Data Quality Sentinel]
     EM[Entity Mapper]
     ES[Evidence Scribe]
@@ -58,7 +58,7 @@ flowchart LR
     PD[Policy Drift Watcher]
   end
 
-  subgraph Close-to-Cash (Daily)
+  subgraph "Close-to-Cash (Daily)"
     AR[Auto-Reconciler]
     ET[Exception Triage]
     CT[Control Tester]
@@ -67,7 +67,7 @@ flowchart LR
     TC[Treasury & Cash Agent]
   end
 
-  subgraph Spend-to-Value (Weekly)
+  subgraph "Spend-to-Value (Weekly)"
     PO[PO/3-Way-Match Autopilot]
     DP[Duplicate Payment Sentinel]
     TE[T&E Audit Agent]
@@ -86,6 +86,7 @@ flowchart LR
   CT --> ES
   ES --> AL
   ET --> PD
+
 ```
 
 ---
