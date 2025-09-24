@@ -1,12 +1,11 @@
-# DeepChief — Finance Autonomy OS
-
-
 <p align="center">
   <img src="dc-150.png" alt="Logo" height="100" style="vertical-align:middle;" />
   <img src="wordmark_dc.png" alt="Wordmark" height="100" style="vertical-align:middle;" />
 </p>
 
-**One-liner:** Close continuously, control automatically, explain every number, and turn cash faster — with receipts.
+# Finance Autonomy OS
+
+*Close continuously, control automatically, explain every number, and turn cash faster — with receipts.*
 
 ---
 
