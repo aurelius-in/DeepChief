@@ -1,0 +1,14 @@
+policy: CTRL_ApprovalThreshold
+version: 1.0.0
+when: je.status == "posted"
+if: je.amount_abs >= 25000
+then:
+  actions:
+    - flag: "approval_required"
+    - notify: "controller"
+gate:
+  approver_role: "controller"
+receipt:
+  include: [je_id, amount_abs, created_by, approved_by]
+
+
