@@ -70,6 +70,10 @@ Run flow (Console)
 - View Matches and KPIs
 - Verify receipts with payload/signature/public key
 
+Spend flow
+- Click Run Duplicate Sentinel and Run SaaS Optimizer
+- View Spend table for detected issues and open receipts
+
 Docs demo (GitHub Pages)
 - Build: cd apps/console-demo && npm i && npm run build
 - Output goes to docs/ with 404.html SPA fallback
