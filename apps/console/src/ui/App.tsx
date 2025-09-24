@@ -2,10 +2,7 @@ import React, { useMemo } from 'react'
 import { JsonView, darkStyles } from 'react-json-view-lite'
 import 'react-json-view-lite/dist/index.css'
 
-const headingFont = new FontFace('DCWordmark', 'url(/wordmark_dc.png)')
-headingFont.load().then(() => {
-  document.fonts.add(headingFont)
-})
+// Use wordmark image from project root; Vite will serve from root when copied into public.
 
 const colors = {
   bg: '#0b1321',
@@ -25,8 +22,9 @@ export function App() {
 
   return (
     <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text }}>
-      <header style={{ padding: 16, borderBottom: `1px solid ${colors.panel}` }}>
-        <h1 style={{ fontFamily: 'DCWordmark, system-ui', margin: 0 }}>DeepChief Console</h1>
+      <header style={{ padding: 16, borderBottom: `1px solid ${colors.panel}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <img src="/wordmark_dc.png" alt="DeepChief" height={28} />
+        <h1 style={{ margin: 0 }}>Console</h1>
       </header>
       <main style={{ maxWidth: 1200, margin: '24px auto', padding: '0 16px' }}>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8 }}>

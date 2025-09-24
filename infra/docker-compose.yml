@@ -42,7 +42,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ../services/api:/app
+      - ../:/workspace
 
 volumes:
   postgres_data:
