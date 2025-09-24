@@ -1,0 +1,23 @@
+# Envs
+.env
+infra/.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+apps/console/node_modules/
+apps/console/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
