@@ -9,6 +9,7 @@ from ..core.db import SessionLocal
 from ..models.gl_entry import GLEntry
 from ..models.bank_txn import BankTxn
 from ..models.reconcile_match import ReconcileMatch
+from ..models.spend_issue import SpendIssue
 
 
 router = APIRouter(prefix="/kpi", tags=["kpi"])
@@ -32,6 +33,18 @@ def kpi_close_to_cash() -> dict[str, Any]:
             "bank_count": total_bank,
             "matched_count": total_matched,
         }
+    finally:
+        sess.close()
+
+
+@router.get("/spend")
+def kpi_spend() -> dict[str, Any]:
+    sess = _session()
+    try:
+        total = sess.query(func.count(SpendIssue.id)).scalar() or 0
+        duplicates = sess.query(func.count(SpendIssue.id)).filter(SpendIssue.type == 'duplicate_payment').scalar() or 0
+        saas = sess.query(func.count(SpendIssue.id)).filter(SpendIssue.type == 'saas_waste').scalar() or 0
+        return {"issues_total": total, "duplicates": duplicates, "saas": saas}
     finally:
         sess.close()
 

@@ -65,6 +65,18 @@ const api = {
     const r = await fetch('/api/agents/exception_triage/run', { method: 'POST' })
     return r.json()
   },
+  async listSpend() {
+    const r = await fetch('/api/spend')
+    return r.json()
+  },
+  async runDuplicate() {
+    const r = await fetch('/api/spend/duplicate/run', { method: 'POST' })
+    return r.json()
+  },
+  async runSaas() {
+    const r = await fetch('/api/spend/saas/run', { method: 'POST' })
+    return r.json()
+  },
 }
 
 export function App() {

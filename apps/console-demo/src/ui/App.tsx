@@ -61,6 +61,13 @@ const demoApi = {
     return j.exceptions ?? []
   },
   async runExceptionTriage() { return { ok: true } },
+  async listSpend() {
+    const r = await fetch('./demo_state.json')
+    const j = await r.json()
+    return j.spend ?? []
+  },
+  async runDuplicate() { return { ok: true } },
+  async runSaas() { return { ok: true } },
 }
 
 export function App() {

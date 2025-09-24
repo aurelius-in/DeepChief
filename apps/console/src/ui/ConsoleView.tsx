@@ -21,6 +21,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [flux, setFlux] = useState<any[]>([])
   const [forecast, setForecast] = useState<any[]>([])
   const [exceptions, setExceptions] = useState<any[]>([])
+  const [spend, setSpend] = useState<any[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -36,6 +37,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setFlux(await api.listFlux()) } catch {}
       try { setForecast(await api.listForecast()) } catch {}
       try { setExceptions(await api.listExceptions()) } catch {}
+      try { setSpend(await api.listSpend()) } catch {}
     })()
   }, [api])
 
@@ -84,6 +86,8 @@ export function ConsoleView({ api }: { api: Api }) {
             <button onClick={async () => { await api.runFlux(); location.reload() }}>Run Flux</button>
             <button onClick={async () => { await api.runForecast(); location.reload() }}>Run Forecast</button>
             <button onClick={async () => { await api.runExceptionTriage(); location.reload() }}>Run Exception Triage</button>
+            <button onClick={async () => { await api.runDuplicate(); location.reload() }}>Run Duplicate Sentinel</button>
+            <button onClick={async () => { await api.runSaas(); location.reload() }}>Run SaaS Optimizer</button>
           </div>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
@@ -106,6 +110,29 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.account}</td>
                   <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
                   <td>{r.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Spend</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Type</th>
+                <th align="left">Vendor</th>
+                <th align="right">Amount</th>
+                <th align="left">Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {spend.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.type}</td>
+                  <td>{r.vendor || '-'}</td>
+                  <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
+                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>

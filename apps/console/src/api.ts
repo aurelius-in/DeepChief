@@ -21,6 +21,9 @@ export type Api = {
   runForecast(): Promise<any>
   listExceptions(): Promise<any[]>
   runExceptionTriage(): Promise<any>
+  listSpend(): Promise<any[]>
+  runDuplicate(): Promise<any>
+  runSaas(): Promise<any>
 }
 
 

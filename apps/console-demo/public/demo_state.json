@@ -57,6 +57,10 @@
   ],
   "exceptions": [
     { "id": "ex_1", "entity_id": "E1", "type": "recon_break", "status": "open", "assignee": null, "receipt_id": "00000000-0000-0000-0000-000000000005" }
+  ],
+  "spend": [
+    { "type": "duplicate_payment", "vendor": "Acme", "amount": 123.45, "receipt_id": "00000000-0000-0000-0000-000000000006" },
+    { "type": "saas_waste", "vendor": "Zoom", "amount": null, "receipt_id": "00000000-0000-0000-0000-000000000007" }
   ]
 }
 
