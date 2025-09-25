@@ -13,6 +13,7 @@ from ..models.spend_issue import SpendIssue
 from ..models.exception_case import ExceptionCase
 from ..models.control_run import ControlRun
 from ..models.evidence_receipt import EvidenceReceipt
+from ..models.job_run import JobRun
 
 
 router = APIRouter(prefix="/kpi", tags=["kpi"])
@@ -79,10 +80,42 @@ def kpi_audit() -> dict[str, Any]:
     sess = _session()
     try:
         receipts_total = sess.query(func.count(EvidenceReceipt.id)).scalar() or 0
+        # Basic approximation: derive counts by type via known tables with receipt links
+        match_count = sess.query(func.count(ReconcileMatch.id)).scalar() or 0
+        control_count = sess.query(func.count(ControlRun.id)).scalar() or 0
+        # Flux/Forecast/Spend counts
+        from ..models.flux_expl import FluxExpl  # lazy import to avoid cycles
+        from ..models.forecast_snapshot import ForecastSnapshot
+        flux_count = sess.query(func.count(FluxExpl.id)).scalar() or 0
+        forecast_count = sess.query(func.count(ForecastSnapshot.id)).scalar() or 0
+        spend_count = sess.query(func.count(SpendIssue.id)).scalar() or 0
+        receipts_by_type = {
+            "match": match_count,
+            "control": control_count,
+            "flux": flux_count,
+            "forecast": forecast_count,
+            "spend": spend_count,
+        }
+        # PBC served proxy: number of packs would be tracked in a separate table; return 0 for now
         return {
             "receipts_total": receipts_total,
-            "receipts_by_type": {},
+            "receipts_by_type": receipts_by_type,
             "pbc_served": 0,
+        }
+    finally:
+        sess.close()
+
+
+@router.get("/dq")
+def kpi_dq() -> dict[str, Any]:
+    sess = _session()
+    try:
+        # Pull latest DQ job run outputs if present
+        jr = sess.query(JobRun).filter(JobRun.agent == 'dq_sentinel').order_by(JobRun.id.desc()).first()
+        outputs = jr.outputs if jr else {}
+        return {
+            "gl_days_since": outputs.get("gl_days_since"),
+            "bank_days_since": outputs.get("bank_days_since"),
         }
     finally:
         sess.close()

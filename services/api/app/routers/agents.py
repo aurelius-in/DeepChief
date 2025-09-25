@@ -165,22 +165,38 @@ def treasury_run() -> dict[str, Any]:
     return outputs
 
 
+def _dq_logic(sess: Session) -> dict[str, Any]:
+    latest_gl = sess.query(GLEntry).order_by(GLEntry.date.desc()).first()
+    latest_bank = sess.query(BankTxn).order_by(BankTxn.date.desc()).first()
+    from datetime import date as _date
+    today = _date.today()
+    freshness = {
+        "gl_days_since": (today - latest_gl.date).days if latest_gl else None,
+        "bank_days_since": (today - latest_bank.date).days if latest_bank else None,
+    }
+    payload = {"agent": "dq_sentinel", "outputs": freshness}
+    header = create_receipt(payload, kind="dq_kpi", links={})
+    outputs = {"receipt_id": header["id"], **freshness}
+    sess.add(JobRun(id=str(uuid.uuid4()), agent="dq_sentinel", inputs={}, outputs=outputs, status="completed", receipt_id=header["id"]))
+    return outputs
+
+
 @router.post("/dq/run")
 def dq_run() -> dict[str, Any]:
     sess = _session()
     try:
-        latest_gl = sess.query(GLEntry).order_by(GLEntry.date.desc()).first()
-        latest_bank = sess.query(BankTxn).order_by(BankTxn.date.desc()).first()
-        from datetime import date as _date
-        today = _date.today()
-        freshness = {
-            "gl_days_since": (today - latest_gl.date).days if latest_gl else None,
-            "bank_days_since": (today - latest_bank.date).days if latest_bank else None,
-        }
-        payload = {"agent": "dq_sentinel", "outputs": freshness}
-        header = create_receipt(payload, kind="dq_kpi", links={})
-        outputs = {"receipt_id": header["id"], **freshness}
-        sess.add(JobRun(id=str(uuid.uuid4()), agent="dq_sentinel", inputs={}, outputs=outputs, status="completed", receipt_id=header["id"]))
+        outputs = _dq_logic(sess)
+        sess.commit()
+        return outputs
+    finally:
+        sess.close()
+
+
+@router.post("/dq_sentinel/run")
+def dq_sentinel_run() -> dict[str, Any]:
+    sess = _session()
+    try:
+        outputs = _dq_logic(sess)
         sess.commit()
         return outputs
     finally:

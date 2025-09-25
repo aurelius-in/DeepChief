@@ -26,6 +26,8 @@
   ,
   "kpi_spend": { "issues_total": 2, "duplicates": 1, "saas": 1 },
   "kpi_treasury": { "projected_buffer_days": 42, "covenant_risk_flags": [{"name": "Leverage", "status": "watch"}] },
+  "kpi_audit": { "receipts_total": 128, "receipts_count_by_type": { "match": 76, "control": 28, "flux": 8, "forecast": 6, "spend": 10 }, "pbc_requests_served": 12 },
+  "kpi_dq": { "gl_days_since": 2, "bank_days_since": 1 },
   "matches": [
     { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" },
     { "gl_entry_id": "gl_1_cash", "bank_txn_id": "bnk_1", "confidence": 0.98, "receipt_id": "00000000-0000-0000-0000-000000000008" }
@@ -84,7 +86,15 @@
   ],
   "policies": [
     { "key": "CTRL_ApprovalThreshold", "active": true, "checksum": "abc123def456", "yaml": "policy: CTRL_ApprovalThreshold" }
-  ]
+  ],
+  "cash": {
+    "series": [
+      { "date": "2025-09-24", "inflow": 20000, "outflow": 15000, "balance": 255000 },
+      { "date": "2025-09-25", "inflow": 5000, "outflow": 7000, "balance": 253000 },
+      { "date": "2025-09-26", "inflow": 5000, "outflow": 7000, "balance": 251000 },
+      { "date": "2025-09-27", "inflow": 20000, "outflow": 7000, "balance": 264000 }
+    ]
+  }
 }
 
 
