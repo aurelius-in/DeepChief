@@ -1,0 +1,14 @@
+policy: CTRL_JEMateriality
+version: 1.0.0
+when: je.status == "posted"
+if: je.amount_abs >= 100000
+then:
+  actions:
+    - flag: "materiality_review"
+    - notify: "controller"
+gate:
+  approver_role: "controller"
+receipt:
+  include: [je_id, amount_abs, created_by]
+
+

@@ -1,0 +1,14 @@
+policy: CTRL_VendorBankChange
+version: 1.0.0
+when: bank_txn.status == "posted"
+if: bank_txn.metadata.bank_change == true
+then:
+  actions:
+    - flag: "bank_change_review"
+    - notify: "ap_manager"
+gate:
+  approver_role: "controller"
+receipt:
+  include: [bank_txn_id, vendor_id, changed_at]
+
+

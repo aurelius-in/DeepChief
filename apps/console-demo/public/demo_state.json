@@ -63,6 +63,9 @@
   "spend": [
     { "type": "duplicate_payment", "vendor": "Acme", "amount": 123.45, "receipt_id": "00000000-0000-0000-0000-000000000006" },
     { "type": "saas_waste", "vendor": "Zoom", "amount": null, "receipt_id": "00000000-0000-0000-0000-000000000007" }
+  ],
+  "policies": [
+    { "key": "CTRL_ApprovalThreshold", "active": true, "checksum": "abc123def456", "yaml": "policy: CTRL_ApprovalThreshold" }
   ]
 }
 

@@ -11,6 +11,7 @@ from ..core.db import SessionLocal
 from ..models.gl_entry import GLEntry
 from ..models.control_run import ControlRun
 from services.receipts.sdk import create_receipt
+from ..models.bank_txn import BankTxn
 
 
 router = APIRouter(prefix="/controls", tags=["controls"])
@@ -36,30 +37,64 @@ def evaluate_approval_threshold(sess: Session, amount_threshold: float = 25000.0
     return findings
 
 
+def evaluate_vendor_bank_change(sess: Session) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    rows = sess.query(BankTxn).all()
+    for r in rows:
+        if isinstance(r.metadata, dict) and r.metadata.get("bank_change") is True:
+            findings.append({
+                "bank_txn_id": r.id,
+                "flag": "bank_change_review",
+            })
+    return findings
+
+
+def evaluate_je_materiality(sess: Session, materiality: float = 100000.0) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    rows = sess.query(GLEntry).all()
+    for r in rows:
+        amt = float(r.amount)
+        if abs(amt) >= materiality:
+            findings.append({
+                "je_id": r.id,
+                "amount_abs": abs(amt),
+                "flag": "materiality_review",
+            })
+    return findings
+
+
 @router.post("/run")
 def run_controls(window_days: int = 30) -> dict[str, Any]:
     sess = _session()
     try:
         end = date.today()
         start = end - timedelta(days=window_days)
-        findings = evaluate_approval_threshold(sess)
-        header = create_receipt(
-            payload={"control": "CTRL_ApprovalThreshold", "findings": findings},
-            kind="control_run",
-            links={}
-        )
-        cr = ControlRun(
-            id=str(uuid.uuid4()),
-            control_key="CTRL_ApprovalThreshold",
-            window_start=start,
-            window_end=end,
-            status="completed",
-            findings={"items": findings},
-            receipt_id=header["id"],
-        )
-        sess.add(cr)
+        all_results: list[dict[str, Any]] = []
+
+        def run_one(key: str, eval_findings: list[dict[str, Any]]):
+            header = create_receipt(
+                payload={"control": key, "findings": eval_findings},
+                kind="control_run",
+                links={}
+            )
+            cr = ControlRun(
+                id=str(uuid.uuid4()),
+                control_key=key,
+                window_start=start,
+                window_end=end,
+                status="completed",
+                findings={"items": eval_findings},
+                receipt_id=header["id"],
+            )
+            sess.add(cr)
+            all_results.append({"control_key": key, "findings": eval_findings, "receipt_id": cr.receipt_id})
+
+        run_one("CTRL_ApprovalThreshold", evaluate_approval_threshold(sess))
+        run_one("CTRL_VendorBankChange", evaluate_vendor_bank_change(sess))
+        run_one("CTRL_JEMateriality", evaluate_je_materiality(sess))
+
         sess.commit()
-        return {"control_key": cr.control_key, "findings": findings, "receipt_id": cr.receipt_id}
+        return {"runs": all_results}
     finally:
         sess.close()
 

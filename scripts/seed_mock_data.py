@@ -32,13 +32,17 @@ def generate_samples(days: int = 60, seed: int = 42) -> dict:
             "source_ref": "seed",
         })
         # Bank mirrors cash with timing noise
-        bank_txns.append({
+        bank_txn = {
             "id": f"bnk_{i}",
             "account_ref": "Cash",
             "amount": cash_amt,
             "date": (d + timedelta(days=rnd.choice([0, 0, 1]))).isoformat(),
             "metadata": {"memo": "seed"},
-        })
+        }
+        # sprinkle bank change flags
+        if i % 17 == 0:
+            bank_txn["metadata"]["bank_change"] = True
+        bank_txns.append(bank_txn)
     return {"gl_entry": gl_entries, "bank_txn": bank_txns}
 
 

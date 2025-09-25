@@ -78,6 +78,15 @@ const demoApi = {
     const j = await r.json()
     return j.kpi_treasury ?? { projected_buffer_days: 42, covenant_risk_flags: [] }
   },
+  async listPolicies() {
+    const r = await fetch('./demo_state.json')
+    const j = await r.json()
+    return j.policies ?? []
+  },
+  async verifyReceiptById(receiptId: string) {
+    // demo always returns valid for presentation
+    return { receipt_id: receiptId, hash_matches: true, signature_valid: true }
+  },
 }
 
 export function App() {
