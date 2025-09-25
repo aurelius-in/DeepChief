@@ -27,14 +27,20 @@ export function ConsoleView({ api }: { api: Api }) {
   const [packIds, setPackIds] = useState<string>("")
   const [policies, setPolicies] = useState<any[]>([])
   const [verifyId, setVerifyId] = useState<string>("")
+  const [cashSeries, setCashSeries] = useState<any[]>([])
+  const [controlsKeyFilter, setControlsKeyFilter] = useState<string>("")
+  const [exceptionStatusFilter, setExceptionStatusFilter] = useState<string>("")
+  const [limit, setLimit] = useState<number>(100)
+  const [offset, setOffset] = useState<number>(0)
+  const [proposeMode, setProposeMode] = useState<boolean>(false)
 
   useEffect(() => {
     ;(async () => {
       const [why, gl, bank, matches] = await Promise.all([
         api.getWhyCard(),
-        api.listGlEntries(),
-        api.listBankTxns(),
-        api.listMatches(),
+        api.listGlEntries(limit, offset),
+        api.listBankTxns(limit, offset),
+        api.listMatches(limit, offset),
       ])
       setState({ why, gl, bank, matches })
       try { setKpi(await api.getKpiCloseToCash()) } catch {}
@@ -46,8 +52,9 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setKpiSpend(await api.getKpiSpend()) } catch {}
       try { setKpiTreasury(await api.getKpiTreasury()) } catch {}
       try { setPolicies(await api.listPolicies()) } catch {}
+      try { const cash = await api.getTreasuryCash(14); setCashSeries(cash?.series || []) } catch {}
     })()
-  }, [api])
+  }, [api, limit, offset])
 
   const sample = useMemo(() => state.why, [state])
 
@@ -101,7 +108,10 @@ export function ConsoleView({ api }: { api: Api }) {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
             <button onClick={async () => { await api.runReconciler(); location.reload() }}>Run Reconciler</button>
-            <button onClick={async () => { await api.runControls(); location.reload() }}>Run Controls</button>
+            <button onClick={async () => { await api.runControls(proposeMode ? 'propose' : undefined); location.reload() }}>Run Controls{proposeMode ? ' (Propose)' : ''}</button>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={proposeMode} onChange={e => setProposeMode(e.target.checked)} /> Propose mode
+            </label>
             <button onClick={async () => { await api.runFlux(); location.reload() }}>Run Flux</button>
             <button onClick={async () => { await api.runForecast(); location.reload() }}>Run Forecast</button>
             <button onClick={async () => { await api.runExceptionTriage(); location.reload() }}>Run Exception Triage</button>
@@ -110,6 +120,16 @@ export function ConsoleView({ api }: { api: Api }) {
             <span>|</span>
             <input placeholder="receipt ids (comma-separated)" value={packIds} onChange={e => setPackIds(e.target.value)} style={{ minWidth: 260 }} />
             <button onClick={() => { if (packIds.trim()) window.open(`/api/receipts/pack?ids=${encodeURIComponent(packIds.trim())}`, '_blank') }}>Download Receipts Pack</button>
+            <span>|</span>
+            <a href={`/api/gl_entries.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">GL CSV</a>
+            <a href={`/api/bank_txns.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Bank CSV</a>
+            <a href={`/api/matches.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Matches CSV</a>
+            <span>|</span>
+            <span>Page:</span>
+            <input type="number" min={1} value={Math.floor(offset / Math.max(1, limit)) + 1}
+              onChange={e => { const page = Math.max(1, parseInt(e.target.value || '1', 10)); setOffset((page - 1) * Math.max(1, limit)); }} style={{ width: 60 }} />
+            <span>Limit:</span>
+            <input type="number" min={1} value={limit} onChange={e => setLimit(Math.max(1, parseInt(e.target.value || '1', 10)))} style={{ width: 80 }} />
           </div>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
@@ -128,6 +148,29 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{p.key}</td>
                   <td>{String(p.active)}</td>
                   <td>{p.checksum?.slice(0, 10)}...</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Treasury Cash (14d)</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Date</th>
+                <th align="right">Inflow</th>
+                <th align="right">Outflow</th>
+                <th align="right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cashSeries.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.date}</td>
+                  <td style={{ textAlign: 'right' }}>{Number(r.inflow).toFixed(2)}</td>
+                  <td style={{ textAlign: 'right' }}>{Number(r.outflow).toFixed(2)}</td>
+                  <td style={{ textAlign: 'right' }}>{Number(r.balance).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -183,6 +226,13 @@ export function ConsoleView({ api }: { api: Api }) {
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>Exceptions</h2>
+          <div style={{ marginBottom: 8 }}>
+            <select value={exceptionStatusFilter} onChange={e => setExceptionStatusFilter(e.target.value)}>
+              <option value="">All Status</option>
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -194,7 +244,7 @@ export function ConsoleView({ api }: { api: Api }) {
               </tr>
             </thead>
             <tbody>
-              {exceptions.map((r, i) => (
+              {exceptions.filter(r => !exceptionStatusFilter || r.status === exceptionStatusFilter).map((r, i) => (
                 <tr key={i}>
                   <td>{r.id}</td>
                   <td>{r.type}</td>
@@ -302,6 +352,9 @@ export function ConsoleView({ api }: { api: Api }) {
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>Controls</h2>
+          <div style={{ marginBottom: 8 }}>
+            <input placeholder="Filter control key" value={controlsKeyFilter} onChange={e => setControlsKeyFilter(e.target.value)} />
+          </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -312,7 +365,7 @@ export function ConsoleView({ api }: { api: Api }) {
               </tr>
             </thead>
             <tbody>
-              {controls.map((r, i) => (
+              {controls.filter(r => !controlsKeyFilter || String(r.control_key).toLowerCase().includes(controlsKeyFilter.toLowerCase())).map((r, i) => (
                 <tr key={i}>
                   <td>{r.control_key}</td>
                   <td>{r.window_start} → {r.window_end}</td>

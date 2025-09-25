@@ -84,7 +84,15 @@
   ],
   "policies": [
     { "key": "CTRL_ApprovalThreshold", "active": true, "checksum": "abc123def456", "yaml": "policy: CTRL_ApprovalThreshold" }
-  ]
+  ],
+  "cash": {
+    "series": [
+      { "date": "2025-09-24", "inflow": 20000, "outflow": 15000, "balance": 255000 },
+      { "date": "2025-09-25", "inflow": 5000, "outflow": 7000, "balance": 253000 },
+      { "date": "2025-09-26", "inflow": 5000, "outflow": 7000, "balance": 251000 },
+      { "date": "2025-09-27", "inflow": 20000, "outflow": 7000, "balance": 264000 }
+    ]
+  }
 }
 
 

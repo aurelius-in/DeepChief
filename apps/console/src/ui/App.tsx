@@ -5,20 +5,20 @@ const api = {
   async getWhyCard() {
     return { policy: 'CTRL_ApprovalThreshold', inputs: {}, tools_used: [], result: {}, receipt: {} }
   },
-  async listGlEntries() {
-    const r = await fetch('/api/gl_entries')
+  async listGlEntries(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/gl_entries?limit=${limit}&offset=${offset}`)
     return r.json()
   },
-  async listBankTxns() {
-    const r = await fetch('/api/bank_txns')
+  async listBankTxns(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/bank_txns?limit=${limit}&offset=${offset}`)
     return r.json()
   },
   async verifyReceipt(req: any) {
     const r = await fetch('/api/receipts/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) })
     return r.json()
   },
-  async listMatches() {
-    const r = await fetch('/api/matches')
+  async listMatches(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/matches?limit=${limit}&offset=${offset}`)
     return r.json()
   },
   async runIngest() {
@@ -37,8 +37,9 @@ const api = {
     const r = await fetch('/api/controls/latest')
     return r.json()
   },
-  async runControls() {
-    const r = await fetch('/api/controls/run', { method: 'POST' })
+  async runControls(mode?: string) {
+    const qs = mode ? `?mode=${encodeURIComponent(mode)}` : ''
+    const r = await fetch(`/api/controls/run${qs}`, { method: 'POST' })
     return r.json()
   },
   async listFlux() {
@@ -91,6 +92,10 @@ const api = {
   },
   async verifyReceiptById(receiptId: string) {
     const r = await fetch(`/api/receipts/${encodeURIComponent(receiptId)}/verify`)
+    return r.json()
+  },
+  async getTreasuryCash(days: number = 14) {
+    const r = await fetch(`/api/treasury/cash?days=${days}`)
     return r.json()
   },
 }

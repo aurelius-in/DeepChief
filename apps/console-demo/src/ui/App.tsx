@@ -87,6 +87,12 @@ const demoApi = {
     // demo always returns valid for presentation
     return { receipt_id: receiptId, hash_matches: true, signature_valid: true }
   },
+  async getTreasuryCash(days: number = 14) {
+    const r = await fetch('./demo_state.json')
+    const j = await r.json()
+    const series = (j.cash && Array.isArray(j.cash.series)) ? j.cash.series : []
+    return { series: series.slice(0, days) }
+  },
 }
 
 export function App() {

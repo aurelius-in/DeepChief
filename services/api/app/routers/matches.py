@@ -17,10 +17,10 @@ def _session() -> Session:
 
 
 @router.get("/matches")
-def list_matches(limit: int = 100) -> list[dict[str, Any]]:
+def list_matches(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     sess = _session()
     try:
-        rows = sess.query(ReconcileMatch).limit(limit).all()
+        rows = sess.query(ReconcileMatch).offset(offset).limit(limit).all()
         return [
             {
                 "id": r.id,
