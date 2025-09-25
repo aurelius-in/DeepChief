@@ -996,6 +996,28 @@ export function ConsoleView({ api }: { api: Api }) {
                   ))}
                 </tbody>
               </table>
+              {/* Policy Impact Matrix */}
+              <div style={{ marginTop: 12 }}>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Policy Impact Matrix</h3>
+                {(() => {
+                  const W = 220, H = 220, pad = 20, n = 3
+                  const cell = (Math.min(W, H) - pad * 2) / n
+                  const rects = [] as JSX.Element[]
+                  for (let r = 0; r < n; r++) {
+                    for (let c = 0; c < n; c++) {
+                      const v = Math.random()
+                      const col = v > 0.66 ? '#e74c3c' : v > 0.33 ? '#f39c12' : '#2ecc71'
+                      const x = pad + c * cell, y = pad + r * cell
+                      rects.push(
+                        <rect key={`${r}-${c}`} x={x} y={y} width={cell - 6} height={cell - 6} fill={col}>
+                          <title>{`impact=${v.toFixed(2)} severity=${r + 1} freq=${c + 1}`}</title>
+                        </rect>
+                      )
+                    }
+                  }
+                  return <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>{rects}</svg>
+                })()}
+              </div>
             </div>
           )}
         </section>
