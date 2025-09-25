@@ -35,6 +35,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [proposeMode, setProposeMode] = useState<boolean>(false)
   const [kpiAudit, setKpiAudit] = useState<any>(null)
   const [kpiDQ, setKpiDQ] = useState<any>(null)
+  const [features, setFeatures] = useState<Record<string, any> | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -57,6 +58,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { const cash = await api.getTreasuryCash(14); setCashSeries(cash?.series || []) } catch {}
       try { setKpiAudit(await api.getKpiAudit()) } catch {}
       try { setKpiDQ(await api.getKpiDQ()) } catch {}
+      try { const f = await api.getFeatures(); setFeatures(f.flags || f) } catch {}
     })()
   }, [api, limit, offset])
 
@@ -91,6 +93,22 @@ export function ConsoleView({ api }: { api: Api }) {
           <h2 style={{ marginTop: 0 }}>Why Card</h2>
           <JsonView data={sample} style={darkStyles} />
         </section>
+        {features && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Feature Flags</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.keys(features).map((k) => (
+                <label key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={!!features[k]} onChange={async (e) => {
+                    const next = await api.setFeature(k, e.target.checked)
+                    const v = next[k] != null ? next[k] : (next.flags ? next.flags[k] : e.target.checked)
+                    setFeatures({ ...(features || {}), [k]: v })
+                  }} /> {k}
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Receipt Verify</h2>
           <form onSubmit={async (e) => { e.preventDefault(); const res = await api.verifyReceipt(verifyForm); setVerifyResult(res.valid ? 'Valid' : 'Invalid') }}>

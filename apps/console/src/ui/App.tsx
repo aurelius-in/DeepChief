@@ -110,6 +110,14 @@ const api = {
     const r = await fetch('/api/agents/dq_sentinel/run', { method: 'POST' })
     return r.json()
   },
+  async getFeatures() {
+    const r = await fetch('/api/features')
+    return r.json()
+  },
+  async setFeature(name: string, value: any) {
+    const r = await fetch(`/api/features/${encodeURIComponent(name)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) })
+    return r.json()
+  },
 }
 
 export function App() {

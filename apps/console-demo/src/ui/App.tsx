@@ -34,6 +34,21 @@ const demoApi = {
   async getKpiAudit() { const j = await loadState(); return j.kpi_audit ?? { receipts_total: 0 } },
   async getKpiDQ() { const j = await loadState(); return j.kpi_dq ?? { gl_days_since: 1, bank_days_since: 1 } },
   async runDQ() { return { ok: true, job_run_id: 'demo-dq-1' } },
+  async getFeatures() {
+    const raw = localStorage.getItem('dc_features')
+    if (raw) return JSON.parse(raw)
+    const j = await loadState();
+    const v = j.features || { flags: { reconcile: true, controls: true, flux: true, forecast: true, spend: true, treasury: true, dq: true } }
+    localStorage.setItem('dc_features', JSON.stringify(v))
+    return v
+  },
+  async setFeature(name: string, value: any) {
+    const current = await this.getFeatures()
+    const next = { ...current }
+    if (next.flags) { next.flags[name] = value } else { next[name] = value }
+    localStorage.setItem('dc_features', JSON.stringify(next))
+    return next.flags ? { [name]: next.flags[name] } : { [name]: next[name] }
+  },
 }
 
 export function App() { return <ConsoleView api={demoApi} /> }
