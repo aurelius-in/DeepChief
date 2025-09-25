@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-0000-0000-000000000006",
+  "kind": "spend_issue",
+  "note": "placeholder for demo",
+  "payload": {
+    "type": "duplicate_payment",
+    "vendor": "Acme",
+    "amount": 123.45
+  }
+}
+
+

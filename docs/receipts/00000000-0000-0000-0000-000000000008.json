@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-0000-0000-000000000008",
+  "kind": "reconcile_match",
+  "note": "placeholder for demo",
+  "payload": {
+    "gl_entry_id": "gl_1_cash",
+    "bank_txn_id": "bnk_1",
+    "confidence": 0.98
+  }
+}
+
+

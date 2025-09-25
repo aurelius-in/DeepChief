@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-0000-0000-000000000004",
+  "kind": "forecast_snapshot",
+  "note": "placeholder for demo",
+  "payload": {
+    "period": "2025-09",
+    "params": { "ar_curve_days": [0.5,0.3,0.2], "ap_curve_days": [0.6,0.3,0.1] },
+    "outputs": { "cash_buffer_days": 45 }
+  }
+}
+
+

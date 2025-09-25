@@ -13,6 +13,7 @@
       nav.sidenav { position:sticky; top:64px; align-self:start; }
       nav.sidenav a { display:block; padding:8px 10px; margin:4px 0; color:var(--dc-text); text-decoration:none; border-radius:6px; font-size:14px; }
       nav.sidenav a:hover { background:rgba(255,255,255,0.06); }
+      nav.sidenav a.active { background:rgba(255,255,255,0.06); }
       main { min-width:0; }
       section { background:var(--dc-panel); padding:16px; border-radius:8px; margin-bottom:16px; }
       .kpi-grid { display:grid; grid-template-columns: repeat(4, minmax(180px,1fr)); gap:12px; }
@@ -49,6 +50,7 @@
   </head>
   <body>
     <header>
+      <img src="./wordmark_dc.png" alt="DeepChief" height="28" />
       <h1>Console</h1>
     </header>
     <div class="layout">
@@ -57,6 +59,7 @@
         <a href="#controls">Controls</a>
         <a href="#spend">Spend</a>
         <a href="#audit">Audit</a>
+        <a href="#architecture">Architecture</a>
       </nav>
       <main>
         <section id="close-to-cash">
@@ -74,7 +77,34 @@
           </div>
           <pre id="whyJson" style="white-space:pre-wrap; display:none"></pre>
         </section>
-        <section>
+        <section id="invoices" style="display:none">
+          <h2>Billing Invoices</h2>
+          <table>
+            <thead>
+              <tr>
+                <th align="left">Invoice</th>
+                <th align="left">Vendor</th>
+                <th align="right">Amount</th>
+                <th align="left">Status</th>
+              </tr>
+            </thead>
+            <tbody id="invBody"></tbody>
+          </table>
+        </section>
+        <section id="employees" style="display:none">
+          <h2>HRIS Employees</h2>
+          <table>
+            <thead>
+              <tr>
+                <th align="left">ID</th>
+                <th align="left">Name</th>
+                <th align="left">Department</th>
+              </tr>
+            </thead>
+            <tbody id="empBody"></tbody>
+          </table>
+        </section>
+        <section id="hub">
           <div class="toolbar">
             <button disabled>Run Ingest</button>
             <button disabled>Run Reconciler</button>
@@ -128,6 +158,17 @@
           <h2>Audit</h2>
           <div id="auditContent"></div>
         </section>
+        <section id="architecture">
+          <h2>Architecture</h2>
+          <div style="display:grid; gap:12px">
+            <img src="./dc-big.png" alt="DeepChief Architecture" style="max-width:100%; border:1px solid #1a2a4a; border-radius:8px" />
+            <div class="chips">
+              <span class="chip ok">Governance Spine</span>
+              <span class="chip ok">Close-to-Cash</span>
+              <span class="chip ok">Spend-to-Value</span>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
     <aside id="receiptDrawer" class="drawer" aria-hidden="true">
@@ -148,6 +189,72 @@
       function makeTabBar(tabs){ const bar=document.getElementById('tabBar'); tabs.forEach((t,i)=>{ const b=document.createElement('div'); b.className='tab'+(i===0?' active':''); b.textContent=t.label; b.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById(t.panelId).classList.add('active'); }; bar.appendChild(b); }); document.getElementById(tabs[0].panelId).classList.add('active') }
       function openReceipt(id){ const el=document.getElementById('receiptDrawer'); const pre=document.getElementById('receiptJson'); pre.textContent=''; pre.classList.add('skeleton'); el.classList.add('open'); fetch(`./receipts/${id}.json`).then(r=>r.ok?r.json():Promise.reject()).then(j=>{ pre.classList.remove('skeleton'); pre.textContent=JSON.stringify(j,null,2) }).catch(()=>{ pre.classList.remove('skeleton'); pre.textContent=`{"id":"${id}","verify":"signed","note":"payload not available"}` }) }
       document.getElementById('drawerClose').onclick=()=>{ document.getElementById('receiptDrawer').classList.remove('open') }
+
+      const TAB_MAP = {
+        GL: 'panel-gl',
+        Bank: 'panel-bank',
+        Matches: 'panel-matches',
+        Controls: 'panel-controls',
+        Flux: 'panel-flux',
+        Forecast: 'panel-forecast',
+        Exceptions: 'panel-exceptions',
+        Spend: 'panel-spend',
+        Policies: 'panel-policies',
+      };
+
+      function setActivePanel(panelId){
+        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+        const el = document.getElementById(panelId);
+        if (el) el.classList.add('active');
+        const bar = document.getElementById('tabBar');
+        if (bar){
+          Array.from(bar.children).forEach((t)=>{
+            const label = t.textContent || '';
+            if (TAB_MAP[label] === panelId) t.classList.add('active'); else t.classList.remove('active');
+          });
+        }
+      }
+
+      function showScreens(key){
+        const showIds = new Set();
+        const hideIds = ['close-to-cash','why','hub','audit','architecture'];
+        const toolbar = document.querySelector('.toolbar');
+        const tabBar = document.getElementById('tabBar');
+        if (key === 'controls'){ showIds.add('hub'); setActivePanel('panel-controls'); }
+        else if (key === 'spend'){ showIds.add('hub'); setActivePanel('panel-spend'); }
+        else if (key === 'audit'){ showIds.add('audit'); }
+        else if (key === 'architecture'){ showIds.add('architecture'); }
+        else { // close/default
+          showIds.add('close-to-cash'); showIds.add('why'); showIds.add('hub'); setActivePanel('panel-gl');
+        }
+        hideIds.forEach(id=>{
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.style.display = showIds.has(id) ? '' : 'none';
+        });
+        if (toolbar) toolbar.style.display = (key==='close') ? '' : 'none';
+        if (tabBar) tabBar.style.display = (key==='close') ? '' : 'none';
+        // highlight nav link
+        document.querySelectorAll('nav.sidenav a').forEach(a=>{
+          const h = (a.getAttribute('href')||'').replace('#','');
+          const isClose = (key==='close' && (h==='close-to-cash'));
+          a.classList.toggle('active', h===key || isClose);
+        });
+        window.scrollTo(0,0);
+      }
+
+      function route(){
+        const raw = (location.hash || '').toLowerCase();
+        if (raw.includes('controls')) return showScreens('controls');
+        if (raw.includes('spend')) return showScreens('spend');
+        if (raw.includes('audit')) return showScreens('audit');
+        if (raw.includes('architecture')) return showScreens('architecture');
+        return showScreens('close');
+      }
+
+      async function safeLoad(path){
+        try { const r = await fetch(path); if (!r.ok) return null; return await r.json(); } catch { return null }
+      }
 
       async function load() {
         const j = await fetch('./demo_state.json').then(r=>r.json());
@@ -295,10 +402,58 @@
         const put = (id, rows, render) => { const tb=document.getElementById(id); rows.forEach((r,i)=>tb.appendChild(render(r,i))); }
         const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.onclick=(e)=>{ e.preventDefault(); openReceipt(c.text) }; td.appendChild(a);} else if (c instanceof HTMLElement) { td.appendChild(c) } else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
 
+        // Try to enrich from docs/mock-data/* if available
+        const gl2 = await safeLoad('./mock-data/gl_entries.json');
+        const bank2 = await safeLoad('./mock-data/bank_txns.json');
+        const m2 = await safeLoad('./mock-data/reconcile_matches.json');
+        const ctrl2 = await safeLoad('./mock-data/control_runs.json');
+        const flux2 = await safeLoad('./mock-data/flux_expl.json');
+        const fc2 = await safeLoad('./mock-data/forecast_snapshots.json');
+        const exc2 = await safeLoad('./mock-data/exceptions.json');
+        const sp2 = await safeLoad('./mock-data/spend_issues.json');
+        const pol2 = await safeLoad('./mock-data/policies.json');
+
+        const GL = Array.isArray(gl2) && gl2.length ? gl2.map(r=>({ id:r.id, entity_id:r.entity_id, account:r.account, amount:r.amount, date:r.date })) : (j.gl||[]);
+        const BANK = Array.isArray(bank2) && bank2.length ? bank2.map(r=>({ id:r.id, account_ref:r.account_ref||r.bank_account_ref, amount:r.amount, date:r.date||r.value_date })) : (j.bank||[]);
+        const MATCH = Array.isArray(m2) && m2.length ? m2.map(r=>({ gl_entry_id:r.gl_entry_id, bank_txn_id:r.bank_txn_id, confidence: r.confidence ?? 1.0, receipt_id:r.receipt_id })) : (j.matches||[]);
+        const CTRL = Array.isArray(ctrl2) && ctrl2.length ? ctrl2.map(r=>({ control_key:r.control_key, window_start:r.window_start, window_end:r.window_end, findings:r.findings, receipt_id:r.receipt_id })) : (j.controls||[]);
+        const FLUX = Array.isArray(flux2) && flux2.length ? flux2.map(r=>({ entity_id:r.entity_id, account:r.account, period:r.period, drivers:r.drivers, receipt_id:r.receipt_id })) : (j.flux||[]);
+        const FC = Array.isArray(fc2) && fc2.length ? fc2.map(r=>({ period:r.period, params:r.params, outputs:r.outputs, receipt_id:r.receipt_id })) : (j.forecast||[]);
+        const EXC = Array.isArray(exc2) && exc2.length ? exc2.map(r=>({ id:r.id, entity_id:r.entity_id, type:r.type, status:r.status, assignee:r.assignee, receipt_id:r.receipt_id })) : (j.exceptions||[]);
+        const SPEND = Array.isArray(sp2) && sp2.length ? sp2.map(r=>({ type:r.type, vendor:r.vendor, amount:r.amount, receipt_id:r.receipt_id })) : (j.spend||[]);
+        const POL = Array.isArray(pol2) && pol2.length ? pol2.map(r=>({ key:r.key, active:r.active, checksum:r.checksum })) : (j.policies||[]);
+
+        // Invoices/Employees sections
+        const inv = await safeLoad('./mock-data/apps_billing_invoices.json');
+        const emp = await safeLoad('./mock-data/apps_hris_employees.json');
+        if (Array.isArray(inv) && inv.length){
+          document.getElementById('invoices').style.display = '';
+          const tb = document.getElementById('invBody');
+          inv.forEach((r)=>{
+            const trEl = document.createElement('tr');
+            const td1=document.createElement('td'); td1.textContent = r.invoice_id || ''; trEl.appendChild(td1);
+            const td2=document.createElement('td'); td2.textContent = r.vendor || ''; trEl.appendChild(td2);
+            const td3=document.createElement('td'); td3.style.textAlign='right'; td3.textContent = r.amount!=null? Number(r.amount).toFixed(2):'-'; trEl.appendChild(td3);
+            const td4=document.createElement('td'); td4.textContent = r.status || ''; trEl.appendChild(td4);
+            tb.appendChild(trEl);
+          });
+        }
+        if (Array.isArray(emp) && emp.length){
+          document.getElementById('employees').style.display = '';
+          const tb = document.getElementById('empBody');
+          emp.forEach((r)=>{
+            const trEl = document.createElement('tr');
+            const td1=document.createElement('td'); td1.textContent = r.employee_id || ''; trEl.appendChild(td1);
+            const td2=document.createElement('td'); td2.textContent = r.name || ''; trEl.appendChild(td2);
+            const td3=document.createElement('td'); td3.textContent = r.department || ''; trEl.appendChild(td3);
+            tb.appendChild(trEl);
+          });
+        }
+
         // Data fill
-        put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
-        put('bankBody', j.bank||[], r=>tr(r.id, r.account_ref, fmt(r.amount), r.date));
-        put('matchBody', j.matches||[], r=>tr(r.gl_entry_id, r.bank_txn_id, fmt(r.confidence), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('glBody', GL, r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
+        put('bankBody', BANK, r=>tr(r.id, r.account_ref, fmt(r.amount), r.date));
+        put('matchBody', MATCH, r=>tr(r.gl_entry_id, r.bank_txn_id, fmt(r.confidence), r.receipt_id? {href:'#', text:r.receipt_id}:''));
         // Reconciliation scatter (index vs confidence)
         try {
           const mx = Array.isArray(j.matches) ? j.matches : [];
@@ -318,12 +473,12 @@
           const holder=document.createElement('div'); holder.appendChild(title); holder.appendChild(scat);
           document.getElementById('panel-matches').appendChild(holder);
         } catch {}
-        put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('excBody', j.exceptions||[], r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
-        put('spendBody', j.spend||[], r=>{ const t=String(r.type||''); const isDup=t.toLowerCase().includes('dup'); const isSaas=t.toLowerCase().includes('saas'); const chip= mkChip(r.type, (isDup||isSaas)?'warn':'ok'); return tr(chip, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
-        put('polBody', j.policies||[], r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
+        put('ctrlBody', CTRL, r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('fluxBody', FLUX, r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('fcBody', FC, r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('excBody', EXC, r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
+        put('spendBody', SPEND, r=>{ const t=String(r.type||''); const isDup=t.toLowerCase().includes('dup'); const isSaas=t.toLowerCase().includes('saas'); const chip= mkChip(r.type, (isDup||isSaas)?'warn':'ok'); return tr(chip, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
+        put('polBody', POL, r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
 
         // Policy impact matrix (synthetic 3x3 grid)
         try {
@@ -432,7 +587,8 @@
           document.getElementById('panel-controls').appendChild(holder);
         } catch {}
       }
-      load();
+      load().then(()=>{ route(); });
+      window.addEventListener('hashchange', route);
     </script>
   </body>
   </html>
