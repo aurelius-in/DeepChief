@@ -1,0 +1,11 @@
+{
+  "id": "00000000-0000-0000-0000-000000000002",
+  "type": "control_run",
+  "created_at": "2025-09-24T12:00:00Z",
+  "hash_b64": "aGFzaF9iNjQ=",
+  "signature_b64": "c2lnX2I2NA==",
+  "public_key_b64": "cGtfYjY0",
+  "payload": { "control_key": "CTRL_ApprovalThreshold", "window_start": "2025-08-01", "window_end": "2025-09-24", "findings_count": 1 }
+}
+
+

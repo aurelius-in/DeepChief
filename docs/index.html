@@ -5,79 +5,223 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DeepChief</title>
     <style>
-      :root { --dc-bg:#0b1321; --dc-panel:#121b2e; --dc-text:#e6edf6; --dc-accent:#57a6ff; }
+      :root { --dc-bg:#0b1321; --dc-panel:#121b2e; --dc-text:#e6edf6; --dc-accent:#57a6ff; --dc-good:#2ecc71; --dc-warn:#f39c12; --dc-bad:#e74c3c; --dc-muted:#8b99b5; }
       html,body { margin:0; padding:0; background:var(--dc-bg); color:var(--dc-text); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-      header { padding:16px; border-bottom:1px solid var(--dc-panel); display:flex; align-items:center; gap:12px; }
+      header { padding:16px; border-bottom:1px solid var(--dc-panel); display:flex; align-items:center; gap:12px; position:sticky; top:0; background:var(--dc-bg); z-index:2; }
       h1,h2 { margin:0 0 8px 0; letter-spacing:.5px; }
-      main { max-width:1200px; margin:24px auto; padding:0 16px; }
+      .layout { max-width:1200px; margin:24px auto; padding:0 16px; display:grid; grid-template-columns: 220px 1fr; gap:16px; }
+      nav.sidenav { position:sticky; top:64px; align-self:start; }
+      nav.sidenav a { display:block; padding:8px 10px; margin:4px 0; color:var(--dc-text); text-decoration:none; border-radius:6px; font-size:14px; }
+      nav.sidenav a:hover { background:rgba(255,255,255,0.06); }
+      main { min-width:0; }
       section { background:var(--dc-panel); padding:16px; border-radius:8px; margin-bottom:16px; }
+      .kpi-grid { display:grid; grid-template-columns: repeat(4, minmax(180px,1fr)); gap:12px; }
+      .kpi-card { background:#0f1830; border:1px solid #1a2a4a; border-radius:8px; padding:10px; display:grid; gap:6px; }
+      .kpi-title { font-size:12px; color:var(--dc-muted); }
+      .kpi-value { font-size:18px; font-weight:600; }
+      .delta { font-size:12px; border-radius:999px; padding:2px 8px; display:inline-block; }
+      .delta.good { background: rgba(46, 204, 113, .15); color:var(--dc-good); }
+      .delta.bad { background: rgba(231, 76, 60, .15); color:var(--dc-bad); }
+      .chips { display:flex; gap:6px; flex-wrap:wrap; }
+      .chip { border-radius:999px; padding:2px 8px; font-size:12px; }
+      .chip.ok { background: rgba(46, 204, 113, .15); color:var(--dc-good); }
+      .chip.warn { background: rgba(243, 156, 18, .15); color:var(--dc-warn); }
+      .chip.err { background: rgba(231, 76, 60, .15); color:var(--dc-bad); }
+      .tabs { display:flex; gap:8px; border-bottom:1px solid #1a2a4a; margin-bottom:8px; position:sticky; top:64px; background:var(--dc-panel); z-index:1; padding-bottom:8px; }
+      .tab { padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px; }
+      .tab.active { background:#0f1830; border:1px solid #1a2a4a; }
+      .tab-panel { display:none; }
+      .tab-panel.active { display:block; }
       table { width:100%; border-collapse:collapse; }
+      thead th { position:sticky; top:0; background:#0f1830; z-index:1; }
       th, td { padding:6px 4px; }
       th[align="right"], td[style*="text-align: right"] { text-align:right; }
-      .kpi { display:flex; gap:16px; flex-wrap:wrap; }
-      .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
       a { color: var(--dc-accent); text-decoration: none; }
+      .drawer { position:fixed; top:0; right:0; width:420px; max-width:90vw; height:100vh; background:#0f1830; border-left:1px solid #1a2a4a; box-shadow: -12px 0 24px rgba(0,0,0,.3); transform: translateX(100%); transition: transform .25s ease; z-index:3; display:flex; flex-direction:column; }
+      .drawer.open { transform: translateX(0); }
+      .drawer header { position:sticky; top:0; background:#0f1830; border-bottom:1px solid #1a2a4a; }
+      .drawer pre { white-space:pre-wrap; margin:0; padding:12px 16px; }
+      .toolbar { position:sticky; top:64px; background:var(--dc-panel); padding:8px; border-radius:8px; border:1px solid #1a2a4a; display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+      .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.12), rgba(255,255,255,0.06)); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius:6px; }
+      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } nav.sidenav { display:none; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
     </style>
   </head>
   <body>
     <header>
       <h1>Console</h1>
     </header>
-    <main>
-      <section id="kpi"><h2>KPIs</h2><div class="kpi" id="kpiRows"></div></section>
-      <section id="why"><h2>Why Card</h2><pre id="whyJson" style="white-space:pre-wrap"></pre></section>
-      <section id="invoices" style="display:none"><h2>Billing Invoices</h2><table><thead><tr><th align="left">Invoice</th><th align="left">Vendor</th><th align="right">Amount</th><th align="left">Status</th></tr></thead><tbody id="invBody"></tbody></table></section>
-      <section id="employees" style="display:none"><h2>HRIS Employees</h2><table><thead><tr><th align="left">ID</th><th align="left">Name</th><th align="left">Department</th></tr></thead><tbody id="empBody"></tbody></table></section>
-      <section id="gl"><h2>GL Entries</h2><table><thead><tr><th align="left">ID</th><th align="left">Entity</th><th align="left">Account</th><th align="right">Amount</th><th align="left">Date</th></tr></thead><tbody id="glBody"></tbody></table></section>
-      <section id="bank"><h2>Bank Transactions</h2><table><thead><tr><th align="left">ID</th><th align="left">Account</th><th align="right">Amount</th><th align="left">Date</th></tr></thead><tbody id="bankBody"></tbody></table></section>
-      <section id="matches"><h2>Matches</h2><table><thead><tr><th align="left">GL Entry</th><th align="left">Bank Txn</th><th align="right">Confidence</th><th align="left">Receipt</th></tr></thead><tbody id="matchBody"></tbody></table></section>
-      <section id="controls"><h2>Controls</h2><table><thead><tr><th align="left">Control</th><th align="left">Window</th><th align="left">Findings</th><th align="left">Receipt</th></tr></thead><tbody id="ctrlBody"></tbody></table></section>
-      <section id="flux"><h2>Flux</h2><table><thead><tr><th align="left">Entity</th><th align="left">Account</th><th align="left">Period</th><th align="left">Drivers</th><th align="left">Receipt</th></tr></thead><tbody id="fluxBody"></tbody></table></section>
-      <section id="forecast"><h2>Forecast</h2><table><thead><tr><th align="left">Period</th><th align="left">Params</th><th align="left">Outputs</th><th align="left">Receipt</th></tr></thead><tbody id="fcBody"></tbody></table></section>
-      <section id="exceptions"><h2>Exceptions</h2><table><thead><tr><th align="left">ID</th><th align="left">Type</th><th align="left">Status</th><th align="left">Assignee</th><th align="left">Receipt</th></tr></thead><tbody id="excBody"></tbody></table></section>
-      <section id="spend"><h2>Spend</h2><table><thead><tr><th align="left">Type</th><th align="left">Vendor</th><th align="right">Amount</th><th align="left">Receipt</th></tr></thead><tbody id="spendBody"></tbody></table></section>
-      <section id="policies"><h2>Policies</h2><table><thead><tr><th align="left">Key</th><th align="left">Active</th><th align="left">Checksum</th></tr></thead><tbody id="polBody"></tbody></table></section>
-    </main>
+    <div class="layout">
+      <nav class="sidenav">
+        <a href="#close-to-cash">Close-to-Cash</a>
+        <a href="#controls">Controls</a>
+        <a href="#spend">Spend</a>
+        <a href="#audit">Audit</a>
+      </nav>
+      <main>
+        <section id="close-to-cash">
+          <h2>Close-to-Cash</h2>
+          <div class="kpi-grid" id="kpiGrid"></div>
+          <div style="margin-top:12px">
+            <svg id="cashChart" width="100%" height="140"></svg>
+          </div>
+        </section>
+        <section id="why">
+          <h2>Why</h2>
+          <div class="chips" id="whyChips"></div>
+          <div style="margin-top:8px">
+            <button id="whyExpand">Expand</button>
+          </div>
+          <pre id="whyJson" style="white-space:pre-wrap; display:none"></pre>
+        </section>
+        <section>
+          <div class="toolbar">
+            <button disabled>Run Ingest</button>
+            <button disabled>Run Reconciler</button>
+            <button disabled>Run Controls</button>
+            <button disabled>Run Flux</button>
+            <button disabled>Run Forecast</button>
+            <button disabled>Run DQ</button>
+            <span id="lastRun" style="color:var(--dc-muted)"></span>
+          </div>
+          <div class="tabs" id="tabBar"></div>
+          <div class="tab-panel" id="panel-gl">
+            <h2>GL</h2>
+            <table><thead><tr><th align="left">ID</th><th align="left">Entity</th><th align="left">Account</th><th align="right">Amount</th><th align="left">Date</th></tr></thead><tbody id="glBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-bank">
+            <h2>Bank</h2>
+            <table><thead><tr><th align="left">ID</th><th align="left">Account</th><th align="right">Amount</th><th align="left">Date</th></tr></thead><tbody id="bankBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-matches">
+            <h2>Matches</h2>
+            <table><thead><tr><th align="left">GL Entry</th><th align="left">Bank Txn</th><th align="right">Confidence</th><th align="left">Receipt</th></tr></thead><tbody id="matchBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-flux">
+            <h2>Flux</h2>
+            <table><thead><tr><th align="left">Entity</th><th align="left">Account</th><th align="left">Period</th><th align="left">Drivers</th><th align="left">Receipt</th></tr></thead><tbody id="fluxBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-forecast">
+            <h2>Forecast</h2>
+            <table><thead><tr><th align="left">Period</th><th align="left">Params</th><th align="left">Outputs</th><th align="left">Receipt</th></tr></thead><tbody id="fcBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-exceptions">
+            <h2>Exceptions</h2>
+            <table><thead><tr><th align="left">ID</th><th align="left">Type</th><th align="left">Status</th><th align="left">Assignee</th><th align="left">Receipt</th></tr></thead><tbody id="excBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-spend">
+            <h2>Spend</h2>
+            <table><thead><tr><th align="left">Type</th><th align="left">Vendor</th><th align="right">Amount</th><th align="left">Receipt</th></tr></thead><tbody id="spendBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-policies">
+            <h2>Policies</h2>
+            <table><thead><tr><th align="left">Key</th><th align="left">Active</th><th align="left">Checksum</th></tr></thead><tbody id="polBody"></tbody></table>
+          </div>
+          <div class="tab-panel" id="panel-invoices" style="display:none"></div>
+          <div class="tab-panel" id="panel-employees" style="display:none"></div>
+        </section>
+        <section id="audit">
+          <h2>Audit</h2>
+          <div id="auditContent"></div>
+        </section>
+      </main>
+    </div>
+    <aside id="receiptDrawer" class="drawer" aria-hidden="true">
+      <header>
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%">
+          <h2 style="margin:0">Receipt</h2>
+          <button id="drawerClose" style="margin-left:auto">Close</button>
+        </div>
+      </header>
+      <pre id="receiptJson" class="skeleton" style="height:100%;"></pre>
+    </aside>
     <script>
+      function percent(n){ return typeof n==='number'? `${n.toFixed(1)}%`:'-'}
+      function fmt(n){ return n!=null? Number(n).toFixed(2): '-' }
+      function mkChip(text, cls){ const s=document.createElement('span'); s.className=`chip ${cls}`; s.textContent=text; return s }
+      function sparklinePath(values, w, h, pad=4){ if(!values||!values.length) return ''; const min=Math.min(...values), max=Math.max(...values); const r=max-min||1; const sx=(w-pad*2)/(values.length-1||1); const pts=values.map((v,i)=>{ const x=pad+i*sx; const y=h-pad-((v-min)/r)*(h-pad*2); return [x,y] }); return 'M '+pts.map(p=>p.join(',')).join(' L ') }
+      function areaPath(values, w, h, pad=4){ if(!values||!values.length) return ''; const min=Math.min(...values), max=Math.max(...values); const r=max-min||1; const sx=(w-pad*2)/(values.length-1||1); const top=values.map((v,i)=>{ const x=pad+i*sx; const y=h-pad-((v-min)/r)*(h-pad*2); return [x,y] }); const bottom=[[w-pad,h-pad],[pad,h-pad]]; return 'M '+top.map(p=>p.join(',')).join(' L ')+' L '+bottom.map(p=>p.join(',')).join(' L ')+' Z' }
+      function makeTabBar(tabs){ const bar=document.getElementById('tabBar'); tabs.forEach((t,i)=>{ const b=document.createElement('div'); b.className='tab'+(i===0?' active':''); b.textContent=t.label; b.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById(t.panelId).classList.add('active'); }; bar.appendChild(b); }); document.getElementById(tabs[0].panelId).classList.add('active') }
+      function openReceipt(id){ const el=document.getElementById('receiptDrawer'); const pre=document.getElementById('receiptJson'); pre.textContent=''; pre.classList.add('skeleton'); el.classList.add('open'); fetch(`./receipts/${id}.json`).then(r=>r.ok?r.json():Promise.reject()).then(j=>{ pre.classList.remove('skeleton'); pre.textContent=JSON.stringify(j,null,2) }).catch(()=>{ pre.classList.remove('skeleton'); pre.textContent=`{"id":"${id}","verify":"signed","note":"payload not available"}` }) }
+      document.getElementById('drawerClose').onclick=()=>{ document.getElementById('receiptDrawer').classList.remove('open') }
+
       async function load() {
         const j = await fetch('./demo_state.json').then(r=>r.json());
-        // KPIs
-        const k = j.kpi || {};
-        const ks = [
-          ['Auto Match Rate', k.auto_match_rate!=null? k.auto_match_rate+'%':'-'],
-          ['GL', k.gl_count], ['Bank', k.bank_count], ['Matched', k.matched_count],
-          ['Exceptions Open', k.exceptions_open ?? '-'],
-          ['Exceptions MTTR', k.exceptions_mttr_days!=null? k.exceptions_mttr_days+'d':'-'],
-          ['Controls Pass', k.controls_pass_rate!=null? k.controls_pass_rate+'%':'-'],
-          ['Flux Ready', k.flux_ready_percent!=null? k.flux_ready_percent+'%':'-'],
+        let k = j.kpi || {};
+        try { const k2 = await fetch('./mock-data/kpis.json').then(r=>r.json()); if (k2 && k2.close_to_cash) k = { ...k, ...k2.close_to_cash } } catch {}
+        const kpiGrid = document.getElementById('kpiGrid');
+        const cards = [
+          { title:'Auto Match Rate', value: percent(k.auto_match_rate ?? j.kpi?.auto_match_rate), trend:[50,55,60,58,62,65,66,67,68,70,72,75] },
+          { title:'Controls Pass', value: percent(k.controls_pass_rate ?? j.kpi?.controls_pass_rate), trend:[80,81,82,83,84,85,86,84,85,86,87,88] },
+          { title:'Exceptions Open', value: (k.exceptions_open ?? j.kpi?.exceptions_open ?? '-'), trend:[40,38,36,35,34,33,32,31,30,29,28,27] },
+          { title:'Flux Ready', value: percent(k.flux_ready_percent ?? j.kpi?.flux_ready_percent), trend:[40,45,48,52,55,57,60,62,64,66,68,70] },
+          { title:'GL Count', value: (k.gl_count ?? j.kpi?.gl_count ?? '-'), trend:[10,12,11,13,12,14,16,15,17,18,19,20] },
+          { title:'Bank Count', value: (k.bank_count ?? j.kpi?.bank_count ?? '-'), trend:[9,10,10,11,11,12,12,13,13,14,14,15] },
+          { title:'Matched', value: (k.matched_count ?? j.kpi?.matched_count ?? '-'), trend:[6,7,7,8,8,9,10,10,11,12,13,14] },
+          { title:'MTTR (days)', value: (k.exceptions_mttr_days ?? j.kpi?.exceptions_mttr_days ?? '-'), trend:[5,4.8,4.6,4.4,4.2,4.0,3.8,3.6,3.4,3.3,3.2,3.2] },
         ];
-        const sK = document.getElementById('kpiRows'); ks.forEach(([n,v])=>{ const d=document.createElement('div'); d.textContent = n+': '+v; sK.appendChild(d); });
-        // Why
-        document.getElementById('whyJson').textContent = JSON.stringify(j.whyCard || {kpi_snapshot:k}, null, 2);
+        const width = 160, height=36;
+        cards.forEach((c)=>{
+          const card=document.createElement('div'); card.className='kpi-card';
+          const t=document.createElement('div'); t.className='kpi-title'; t.textContent=c.title; card.appendChild(t);
+          const v=document.createElement('div'); v.className='kpi-value'; v.textContent=c.value; card.appendChild(v);
+          const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width', String(width)); svg.setAttribute('height', String(height));
+          const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d', sparklinePath(c.trend, width, height)); path.setAttribute('fill','none'); path.setAttribute('stroke', 'url(#grad)'); path.setAttribute('stroke-width','2');
+          const defs=document.createElementNS('http://www.w3.org/2000/svg','defs'); const lg=document.createElementNS('http://www.w3.org/2000/svg','linearGradient'); lg.setAttribute('id','grad'); lg.setAttribute('x1','0'); lg.setAttribute('x2','1'); lg.setAttribute('y1','0'); lg.setAttribute('y2','0'); const s1=document.createElementNS('http://www.w3.org/2000/svg','stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color', '#57a6ff'); const s2=document.createElementNS('http://www.w3.org/2000/svg','stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color', '#2ecc71'); lg.appendChild(s1); lg.appendChild(s2); defs.appendChild(lg);
+          svg.appendChild(defs); svg.appendChild(path); card.appendChild(svg);
+          kpiGrid.appendChild(card);
+        });
+
+        // Treasury cash area chart
+        let cash = [];
+        try { const t = await fetch('./mock-data/treasury_cash.json').then(r=>r.json()); cash = (t.series||[]).map(x=>x.balance) } catch {}
+        const svg = document.getElementById('cashChart'); const BB=svg.getBoundingClientRect(); const W=BB.width||800, H=140; svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        const ap = areaPath(cash.length? cash : [152000,150200,149400,150900,149100,151000,150500,148800,149300,150100,151400,150700,152200,153000], W, H);
+        const aPath=document.createElementNS('http://www.w3.org/2000/svg','path'); aPath.setAttribute('d', ap); aPath.setAttribute('fill','rgba(87,166,255,.15)'); aPath.setAttribute('stroke','#57a6ff'); aPath.setAttribute('stroke-width','2'); svg.appendChild(aPath);
+
+        // Why chips + drawer
+        const why = j.whyCard || { kpi_snapshot: k };
+        const chips = document.getElementById('whyChips');
+        if (why.policy) chips.appendChild(mkChip(why.policy, 'ok'));
+        if (why.result?.flag) chips.appendChild(mkChip(why.result.flag, 'warn'));
+        if (why.receipt?.id) { const a=document.createElement('a'); a.href='#'; a.textContent=why.receipt.id; a.onclick=(e)=>{ e.preventDefault(); openReceipt(why.receipt.id) }; chips.appendChild(a) }
+        const whyJson = document.getElementById('whyJson'); whyJson.textContent = JSON.stringify(why, null, 2);
+        document.getElementById('whyExpand').onclick = ()=>{ const visible = whyJson.style.display !== 'none'; whyJson.style.display = visible ? 'none' : 'block' }
+
+        // Tabs
+        makeTabBar([
+          { label:'GL', panelId:'panel-gl' },
+          { label:'Bank', panelId:'panel-bank' },
+          { label:'Matches', panelId:'panel-matches' },
+          { label:'Flux', panelId:'panel-flux' },
+          { label:'Forecast', panelId:'panel-forecast' },
+          { label:'Exceptions', panelId:'panel-exceptions' },
+          { label:'Spend', panelId:'panel-spend' },
+          { label:'Policies', panelId:'panel-policies' },
+        ]);
+
         // Helpers
         const put = (id, rows, render) => { const tb=document.getElementById(id); rows.forEach((r,i)=>tb.appendChild(render(r,i))); }
-        const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.target='_blank'; td.appendChild(a);} else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
-        // Invoices / Employees
-        if (Array.isArray(j.invoices) && j.invoices.length){ document.getElementById('invoices').style.display='block'; put('invBody', j.invoices, r=>tr(r.invoice_id, r.vendor, r.amount!=null? Number(r.amount).toFixed(2):'', r.status)); }
-        if (Array.isArray(j.employees) && j.employees.length){ document.getElementById('employees').style.display='block'; put('empBody', j.employees, r=>tr(r.employee_id, r.name, r.department)); }
-        // GL
-        put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, Number(r.amount).toFixed(2), r.date));
-        // Bank
-        put('bankBody', j.bank||[], r=>tr(r.id, r.account_ref, Number(r.amount).toFixed(2), r.date));
-        // Matches
-        put('matchBody', j.matches||[], r=>tr(r.gl_entry_id, r.bank_txn_id, Number(r.confidence).toFixed(2), r.receipt_id? {href:'./#', text:r.receipt_id}:''));
-        // Controls
-        put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'./#', text:r.receipt_id}:''));
-        // Flux
-        put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'./#', text:r.receipt_id}:''));
-        // Forecast
-        put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'./#', text:r.receipt_id}:''));
-        // Exceptions
-        put('excBody', j.exceptions||[], r=>tr(r.id, r.type, r.status, r.assignee||'', r.receipt_id? {href:'./#', text:r.receipt_id}:''));
-        // Spend
-        put('spendBody', j.spend||[], r=>tr(r.type, r.vendor||'', r.amount!=null? Number(r.amount).toFixed(2):'', r.receipt_id? {href:'./#', text:r.receipt_id}:''));
-        // Policies
+        const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.onclick=(e)=>{ e.preventDefault(); openReceipt(c.text) }; td.appendChild(a);} else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
+
+        // Data fill
+        put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
+        put('bankBody', j.bank||[], r=>tr(r.id, r.account_ref, fmt(r.amount), r.date));
+        put('matchBody', j.matches||[], r=>tr(r.gl_entry_id, r.bank_txn_id, fmt(r.confidence), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('excBody', j.exceptions||[], r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip.textContent, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
+        put('spendBody', j.spend||[], r=>tr(r.type, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:''));
         put('polBody', j.policies||[], r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
+
+        // Audit summary
+        const audit = j.kpi_audit || {}; const dq = j.kpi_dq || {};
+        document.getElementById('auditContent').innerHTML = `
+          <div class="chips">
+            <span class="chip ok">Receipts: ${audit.receipts_total ?? '-'}</span>
+            <span class="chip ${dq.gl_days_since===0 && dq.bank_days_since===0 ? 'ok':'warn'}">Freshness GL ${dq.gl_days_since ?? '-'}d / Bank ${dq.bank_days_since ?? '-'}d</span>
+          </div>`;
       }
       load();
     </script>
