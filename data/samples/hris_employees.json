@@ -1,0 +1,5 @@
+[
+  { "employee_id": "E-001", "name": "Analyst One", "department": "Finance" },
+  { "employee_id": "E-002", "name": "Controller Two", "department": "Finance" }
+]
+

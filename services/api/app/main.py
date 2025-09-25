@@ -15,6 +15,8 @@ from .routers import spend as spend_router
 from .routers import policies as policies_router
 from .routers import features as features_router
 from .routers import treasury as treasury_router
+from .routers import job_runs as job_runs_router
+from .routers import apps as apps_router
 
 
 def create_app() -> FastAPI:
@@ -42,6 +44,8 @@ def create_app() -> FastAPI:
     application.include_router(policies_router.router)
     application.include_router(features_router.router)
     application.include_router(treasury_router.router)
+    application.include_router(job_runs_router.router)
+    application.include_router(apps_router.router)
 
     return application
 

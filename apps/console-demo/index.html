@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DeepChief</title>
+    <style>
+      @font-face {
+        font-family: 'DCWord';
+        src: url('./wordmark_dc.png');
+      }
+      :root {
+        --dc-bg: #0b1321;
+        --dc-panel: #121b2e;
+        --dc-text: #e6edf6;
+        --dc-accent: #57a6ff;
+      }
+      body { background: var(--dc-bg); color: var(--dc-text); }
+      h1, h2, h3 { font-family: 'DCWord', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; letter-spacing: 0.5px; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

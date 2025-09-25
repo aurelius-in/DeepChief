@@ -36,4 +36,12 @@ jobs:
         run: |
           npm ci || npm i
           npm run build || npm run -s build
+      - name: Playwright install browsers
+        working-directory: apps/console
+        run: |
+          npx playwright install --with-deps
+      - name: Playwright smoke tests
+        working-directory: apps/console
+        run: |
+          npm run test:pw || npx playwright test
 

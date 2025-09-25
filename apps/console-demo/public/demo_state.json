@@ -22,12 +22,25 @@
     { "id": "bnk_0", "account_ref": "Cash", "amount": -1234.56, "date": "2025-08-01" },
     { "id": "bnk_1", "account_ref": "Cash", "amount": 900.25, "date": "2025-08-02" }
   ],
-  "kpi": { "auto_match_rate": 62.5, "gl_count": 3, "bank_count": 2, "matched_count": 2, "exceptions_open": 4, "controls_pass_rate": 66.7 }
+  "kpi": { "auto_match_rate": 62.5, "gl_count": 3, "bank_count": 2, "matched_count": 2, "exceptions_open": 4, "exceptions_mttr_days": 2.5, "controls_pass_rate": 66.7, "flux_ready_percent": 50.0 }
   ,
-  "kpi_spend": { "issues_total": 2, "duplicates": 1, "saas": 1 },
+  "kpi_spend": { "issues_total": 2, "duplicates": 1, "saas": 1, "duplicate_detected_value": 123.45, "saas_waste_estimate": 0, "touchless_invoices_percent": 35.0 },
   "kpi_treasury": { "projected_buffer_days": 42, "covenant_risk_flags": [{"name": "Leverage", "status": "watch"}] },
   "kpi_audit": { "receipts_total": 128, "receipts_count_by_type": { "match": 76, "control": 28, "flux": 8, "forecast": 6, "spend": 10 }, "pbc_requests_served": 12 },
   "kpi_dq": { "gl_days_since": 2, "bank_days_since": 1 },
+  "job_runs": [
+    { "id": "jr_1", "agent": "auto_reconciler", "status": "completed", "receipt_id": "00000000-0000-0000-0000-000000000001" },
+    { "id": "jr_2", "agent": "flux", "status": "completed", "receipt_id": "00000000-0000-0000-0000-000000000003" },
+    { "id": "jr_3", "agent": "forecast", "status": "completed", "receipt_id": "00000000-0000-0000-0000-000000000004" }
+  ],
+  "invoices": [
+    { "invoice_id": "INV-1001", "vendor": "Acme", "amount": 123.45, "status": "open" },
+    { "invoice_id": "INV-1002", "vendor": "Globex", "amount": 540.00, "status": "paid" }
+  ],
+  "employees": [
+    { "employee_id": "E-001", "name": "Analyst One", "department": "Finance" },
+    { "employee_id": "E-002", "name": "Controller Two", "department": "Finance" }
+  ],
   "matches": [
     { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" },
     { "gl_entry_id": "gl_1_cash", "bank_txn_id": "bnk_1", "confidence": 0.98, "receipt_id": "00000000-0000-0000-0000-000000000008" }

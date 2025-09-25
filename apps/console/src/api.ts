@@ -28,6 +28,8 @@ export type Api = {
   getKpiTreasury(): Promise<any>
   listPolicies(): Promise<any[]>
   verifyReceiptById(receiptId: string): Promise<{ receipt_id: string, hash_matches: boolean, signature_valid: boolean }>
+  getFeatures(): Promise<Record<string, any>>
+  setFeature(name: string, value: any): Promise<Record<string, any>>
 }
 
 

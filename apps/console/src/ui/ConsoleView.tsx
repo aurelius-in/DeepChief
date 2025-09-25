@@ -35,6 +35,10 @@ export function ConsoleView({ api }: { api: Api }) {
   const [proposeMode, setProposeMode] = useState<boolean>(false)
   const [kpiAudit, setKpiAudit] = useState<any>(null)
   const [kpiDQ, setKpiDQ] = useState<any>(null)
+  const [features, setFeatures] = useState<Record<string, any> | null>(null)
+  const [jobRuns, setJobRuns] = useState<any[]>([])
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [employees, setEmployees] = useState<any[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -47,20 +51,42 @@ export function ConsoleView({ api }: { api: Api }) {
       setState({ why, gl, bank, matches })
       try { setKpi(await api.getKpiCloseToCash()) } catch {}
       try { setControls(await api.listControlsLatest()) } catch {}
-      try { setFlux(await api.listFlux()) } catch {}
-      try { setForecast(await api.listForecast()) } catch {}
-      try { setExceptions(await api.listExceptions()) } catch {}
-      try { setSpend(await api.listSpend()) } catch {}
+      try { setFlux(await api.listFlux(limit, offset)) } catch {}
+      try { setForecast(await api.listForecast(limit, offset)) } catch {}
+      try { setExceptions(await api.listExceptions(limit, offset, exceptionStatusFilter || undefined)) } catch {}
+      try { setSpend(await api.listSpend(limit, offset)) } catch {}
       try { setKpiSpend(await api.getKpiSpend()) } catch {}
       try { setKpiTreasury(await api.getKpiTreasury()) } catch {}
       try { setPolicies(await api.listPolicies()) } catch {}
       try { const cash = await api.getTreasuryCash(14); setCashSeries(cash?.series || []) } catch {}
       try { setKpiAudit(await api.getKpiAudit()) } catch {}
       try { setKpiDQ(await api.getKpiDQ()) } catch {}
+      try { const f = await api.getFeatures(); setFeatures(f.flags || f) } catch {}
+      try { setJobRuns(await api.listJobRuns(20, 0)) } catch {}
+      try { setInvoices(await api.listInvoices(20, 0)) } catch {}
+      try { setEmployees(await api.listEmployees(20, 0)) } catch {}
     })()
-  }, [api, limit, offset])
+  }, [api, limit, offset, exceptionStatusFilter])
 
   const sample = useMemo(() => state.why, [state])
+  const whyCard = useMemo(() => {
+    const hasWhy = sample && typeof sample === 'object' && Object.keys(sample || {}).length > 0
+    if (hasWhy) return sample
+    if (controls && controls.length > 0) {
+      const c = controls[0]
+      const items = (c?.findings?.items as any[]) || []
+      const first = items[0] || {}
+      return {
+        policy: c.control_key,
+        inputs: first,
+        tools_used: ['rule-engine'],
+        result: { findings_count: items.length, window_start: c.window_start, window_end: c.window_end },
+        receipt: c.receipt_id ? { id: c.receipt_id, url: `/receipts/${c.receipt_id}` } : null,
+        kpi_snapshot: kpi || {},
+      }
+    }
+    return { kpi_snapshot: kpi || {} }
+  }, [sample, controls, kpi])
 
   return (
     <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text }}>
@@ -78,10 +104,15 @@ export function ConsoleView({ api }: { api: Api }) {
               <div>Bank: {kpi.bank_count}</div>
               <div>Matched: {kpi.matched_count}</div>
               <div>Exceptions Open: {kpi.exceptions_open ?? '-'}</div>
+              <div>Exceptions MTTR: {kpi.exceptions_mttr_days != null ? `${kpi.exceptions_mttr_days.toFixed(1)}d` : '-'}</div>
               <div>Controls Pass Rate: {kpi.controls_pass_rate != null ? `${kpi.controls_pass_rate.toFixed(1)}%` : '-'}</div>
+              <div>Flux Ready: {kpi.flux_ready_percent != null ? `${kpi.flux_ready_percent.toFixed(1)}%` : '-'}</div>
               <div>| Spend Issues: {kpiSpend?.issues_total ?? '-'}</div>
               <div>Duplicates: {kpiSpend?.duplicates ?? '-'}</div>
+              <div>Dup Value: {kpiSpend?.duplicate_detected_value != null ? `$${Number(kpiSpend.duplicate_detected_value).toFixed(2)}` : '-'}</div>
               <div>SaaS: {kpiSpend?.saas ?? '-'}</div>
+              <div>Waste Est.: {kpiSpend?.saas_waste_estimate != null ? `$${Number(kpiSpend.saas_waste_estimate).toFixed(0)}` : '-'}</div>
+              <div>Touchless %: {kpiSpend?.touchless_invoices_percent != null ? `${kpiSpend.touchless_invoices_percent.toFixed(1)}%` : '-'}</div>
               <div>| Buffer Days: {kpiTreasury?.projected_buffer_days ?? '-'}</div>
               <div>Flags: {Array.isArray(kpiTreasury?.covenant_risk_flags) ? kpiTreasury.covenant_risk_flags.map((f: any) => `${f.name}:${f.status}`).join(', ') : '-'}</div>
             </div>
@@ -89,8 +120,72 @@ export function ConsoleView({ api }: { api: Api }) {
         )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Why Card</h2>
-          <JsonView data={sample} style={darkStyles} />
+          <JsonView data={whyCard} style={darkStyles} />
         </section>
+        {invoices.length > 0 && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Billing Invoices</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th align="left">Invoice</th>
+                  <th align="left">Vendor</th>
+                  <th align="right">Amount</th>
+                  <th align="left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.invoice_id}</td>
+                    <td>{r.vendor}</td>
+                    <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
+                    <td>{r.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+        {employees.length > 0 && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>HRIS Employees</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th align="left">ID</th>
+                  <th align="left">Name</th>
+                  <th align="left">Department</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.employee_id}</td>
+                    <td>{r.name}</td>
+                    <td>{r.department}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+        {features && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Feature Flags</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.keys(features).map((k) => (
+                <label key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={!!features[k]} onChange={async (e) => {
+                    const next = await api.setFeature(k, e.target.checked)
+                    const v = next[k] != null ? next[k] : (next.flags ? next.flags[k] : e.target.checked)
+                    setFeatures({ ...(features || {}), [k]: v })
+                  }} /> {k}
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Receipt Verify</h2>
           <form onSubmit={async (e) => { e.preventDefault(); const res = await api.verifyReceipt(verifyForm); setVerifyResult(res.valid ? 'Valid' : 'Invalid') }}>
@@ -128,6 +223,14 @@ export function ConsoleView({ api }: { api: Api }) {
             <a href={`/api/gl_entries.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">GL CSV</a>
             <a href={`/api/bank_txns.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Bank CSV</a>
             <a href={`/api/matches.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Matches CSV</a>
+            <a href={`/api/flux/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer" style={{ display: 'none' }} />
+            <a href={`/api/exceptions.csv?limit=${limit}&offset=${offset}${exceptionStatusFilter ? `&status=${encodeURIComponent(exceptionStatusFilter)}` : ''}`} target="_blank" rel="noreferrer">Exceptions CSV</a>
+            <a href={`/api/controls/latest.csv?limit=${limit}`} target="_blank" rel="noreferrer">Controls CSV</a>
+            <a href={`/api/flux/flux.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Flux CSV</a>
+            <a href={`/api/forecast/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Forecast CSV</a>
+            <a href={`/api/spend/spend.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Spend CSV</a>
+            <a href={`/api/apps/billing/invoices.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Invoices CSV</a>
+            <a href={`/api/apps/hris/employees.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Employees CSV</a>
             <span>|</span>
             <span>Page:</span>
             <input type="number" min={1} value={Math.floor(offset / Math.max(1, limit)) + 1}
@@ -191,6 +294,31 @@ export function ConsoleView({ api }: { api: Api }) {
                 <strong>DQ Freshness</strong>: GL {kpiDQ.gl_days_since ?? '-'}d, Bank {kpiDQ.bank_days_since ?? '-'}d
               </div>
             )}
+          </section>
+        )}
+        {jobRuns.length > 0 && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Job Runs</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th align="left">ID</th>
+                  <th align="left">Agent</th>
+                  <th align="left">Status</th>
+                  <th align="left">Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobRuns.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.id}</td>
+                    <td>{r.agent}</td>
+                    <td>{r.status}</td>
+                    <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
         )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>

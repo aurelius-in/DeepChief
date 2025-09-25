@@ -42,32 +42,33 @@ const api = {
     const r = await fetch(`/api/controls/run${qs}`, { method: 'POST' })
     return r.json()
   },
-  async listFlux() {
-    const r = await fetch('/api/flux')
+  async listFlux(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/flux?limit=${limit}&offset=${offset}`)
     return r.json()
   },
   async runFlux() {
     const r = await fetch('/api/agents/flux/run', { method: 'POST' })
     return r.json()
   },
-  async listForecast() {
-    const r = await fetch('/api/forecast')
+  async listForecast(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/forecast?limit=${limit}&offset=${offset}`)
     return r.json()
   },
   async runForecast() {
     const r = await fetch('/api/agents/forecast/run', { method: 'POST' })
     return r.json()
   },
-  async listExceptions() {
-    const r = await fetch('/api/exceptions')
+  async listExceptions(limit: number = 100, offset: number = 0, status?: string) {
+    const qs = new URLSearchParams({ limit: String(limit), offset: String(offset), ...(status ? { status } : {}) })
+    const r = await fetch(`/api/exceptions?${qs.toString()}`)
     return r.json()
   },
   async runExceptionTriage() {
     const r = await fetch('/api/agents/exception_triage/run', { method: 'POST' })
     return r.json()
   },
-  async listSpend() {
-    const r = await fetch('/api/spend')
+  async listSpend(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/spend?limit=${limit}&offset=${offset}`)
     return r.json()
   },
   async runDuplicate() {
@@ -108,6 +109,26 @@ const api = {
   },
   async runDQ() {
     const r = await fetch('/api/agents/dq_sentinel/run', { method: 'POST' })
+    return r.json()
+  },
+  async getFeatures() {
+    const r = await fetch('/api/features')
+    return r.json()
+  },
+  async setFeature(name: string, value: any) {
+    const r = await fetch(`/api/features/${encodeURIComponent(name)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) })
+    return r.json()
+  },
+  async listJobRuns(limit: number = 20, offset: number = 0) {
+    const r = await fetch(`/api/job_runs?limit=${limit}&offset=${offset}`)
+    return r.json()
+  },
+  async listInvoices(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/apps/billing/invoices?limit=${limit}&offset=${offset}`)
+    return r.json()
+  },
+  async listEmployees(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/apps/hris/employees?limit=${limit}&offset=${offset}`)
     return r.json()
   },
 }

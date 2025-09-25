@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeepChief</title>
+    <style>
+      :root { --dc-bg:#0b1321; --dc-panel:#121b2e; --dc-text:#e6edf6; --dc-accent:#57a6ff; }
+      html,body { margin:0; padding:0; background:var(--dc-bg); color:var(--dc-text); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+      header { padding:16px; border-bottom:1px solid var(--dc-panel); display:flex; align-items:center; gap:12px; }
+      h1,h2 { margin:0 0 8px 0; letter-spacing:.5px; }
+      main { max-width:1200px; margin:24px auto; padding:0 16px; }
+      section { background:var(--dc-panel); padding:16px; border-radius:8px; margin-bottom:16px; }
+      table { width:100%; border-collapse:collapse; }
+      th, td { padding:6px 4px; }
+      th[align="right"], td[style*="text-align: right"] { text-align:right; }
+      .kpi { display:flex; gap:16px; flex-wrap:wrap; }
+      .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+      a { color: var(--dc-accent); text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Console</h1>
+    </header>
+    <main>
+      <section id="kpi"><h2>KPIs</h2><div class="kpi" id="kpiRows"></div></section>
+      <section id="why"><h2>Why Card</h2><pre id="whyJson" style="white-space:pre-wrap"></pre></section>
+      <section id="invoices" style="display:none"><h2>Billing Invoices</h2><table><thead><tr><th align="left">Invoice</th><th align="left">Vendor</th><th align="right">Amount</th><th align="left">Status</th></tr></thead><tbody id="invBody"></tbody></table></section>
+      <section id="employees" style="display:none"><h2>HRIS Employees</h2><table><thead><tr><th align="left">ID</th><th align="left">Name</th><th align="left">Department</th></tr></thead><tbody id="empBody"></tbody></table></section>
+      <section id="gl"><h2>GL Entries</h2><table><thead><tr><th align="left">ID</th><th align="left">Entity</th><th align="left">Account</th><th align="right">Amount</th><th align="left">Date</th></tr></thead><tbody id="glBody"></tbody></table></section>
+      <section id="bank"><h2>Bank Transactions</h2><table><thead><tr><th align="left">ID</th><th align="left">Account</th><th align="right">Amount</th><th align="left">Date</th></tr></thead><tbody id="bankBody"></tbody></table></section>
+      <section id="matches"><h2>Matches</h2><table><thead><tr><th align="left">GL Entry</th><th align="left">Bank Txn</th><th align="right">Confidence</th><th align="left">Receipt</th></tr></thead><tbody id="matchBody"></tbody></table></section>
+      <section id="controls"><h2>Controls</h2><table><thead><tr><th align="left">Control</th><th align="left">Window</th><th align="left">Findings</th><th align="left">Receipt</th></tr></thead><tbody id="ctrlBody"></tbody></table></section>
+      <section id="flux"><h2>Flux</h2><table><thead><tr><th align="left">Entity</th><th align="left">Account</th><th align="left">Period</th><th align="left">Drivers</th><th align="left">Receipt</th></tr></thead><tbody id="fluxBody"></tbody></table></section>
+      <section id="forecast"><h2>Forecast</h2><table><thead><tr><th align="left">Period</th><th align="left">Params</th><th align="left">Outputs</th><th align="left">Receipt</th></tr></thead><tbody id="fcBody"></tbody></table></section>
+      <section id="exceptions"><h2>Exceptions</h2><table><thead><tr><th align="left">ID</th><th align="left">Type</th><th align="left">Status</th><th align="left">Assignee</th><th align="left">Receipt</th></tr></thead><tbody id="excBody"></tbody></table></section>
+      <section id="spend"><h2>Spend</h2><table><thead><tr><th align="left">Type</th><th align="left">Vendor</th><th align="right">Amount</th><th align="left">Receipt</th></tr></thead><tbody id="spendBody"></tbody></table></section>
+      <section id="policies"><h2>Policies</h2><table><thead><tr><th align="left">Key</th><th align="left">Active</th><th align="left">Checksum</th></tr></thead><tbody id="polBody"></tbody></table></section>
+    </main>
+    <script>
+      async function load() {
+        const j = await fetch('./demo_state.json').then(r=>r.json());
+        // KPIs
+        const k = j.kpi || {};
+        const ks = [
+          ['Auto Match Rate', k.auto_match_rate!=null? k.auto_match_rate+'%':'-'],
+          ['GL', k.gl_count], ['Bank', k.bank_count], ['Matched', k.matched_count],
+          ['Exceptions Open', k.exceptions_open ?? '-'],
+          ['Exceptions MTTR', k.exceptions_mttr_days!=null? k.exceptions_mttr_days+'d':'-'],
+          ['Controls Pass', k.controls_pass_rate!=null? k.controls_pass_rate+'%':'-'],
+          ['Flux Ready', k.flux_ready_percent!=null? k.flux_ready_percent+'%':'-'],
+        ];
+        const sK = document.getElementById('kpiRows'); ks.forEach(([n,v])=>{ const d=document.createElement('div'); d.textContent = n+': '+v; sK.appendChild(d); });
+        // Why
+        document.getElementById('whyJson').textContent = JSON.stringify(j.whyCard || {kpi_snapshot:k}, null, 2);
+        // Helpers
+        const put = (id, rows, render) => { const tb=document.getElementById(id); rows.forEach((r,i)=>tb.appendChild(render(r,i))); }
+        const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.target='_blank'; td.appendChild(a);} else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
+        // Invoices / Employees
+        if (Array.isArray(j.invoices) && j.invoices.length){ document.getElementById('invoices').style.display='block'; put('invBody', j.invoices, r=>tr(r.invoice_id, r.vendor, r.amount!=null? Number(r.amount).toFixed(2):'', r.status)); }
+        if (Array.isArray(j.employees) && j.employees.length){ document.getElementById('employees').style.display='block'; put('empBody', j.employees, r=>tr(r.employee_id, r.name, r.department)); }
+        // GL
+        put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, Number(r.amount).toFixed(2), r.date));
+        // Bank
+        put('bankBody', j.bank||[], r=>tr(r.id, r.account_ref, Number(r.amount).toFixed(2), r.date));
+        // Matches
+        put('matchBody', j.matches||[], r=>tr(r.gl_entry_id, r.bank_txn_id, Number(r.confidence).toFixed(2), r.receipt_id? {href:'./#', text:r.receipt_id}:''));
+        // Controls
+        put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'./#', text:r.receipt_id}:''));
+        // Flux
+        put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'./#', text:r.receipt_id}:''));
+        // Forecast
+        put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'./#', text:r.receipt_id}:''));
+        // Exceptions
+        put('excBody', j.exceptions||[], r=>tr(r.id, r.type, r.status, r.assignee||'', r.receipt_id? {href:'./#', text:r.receipt_id}:''));
+        // Spend
+        put('spendBody', j.spend||[], r=>tr(r.type, r.vendor||'', r.amount!=null? Number(r.amount).toFixed(2):'', r.receipt_id? {href:'./#', text:r.receipt_id}:''));
+        // Policies
+        put('polBody', j.policies||[], r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
+      }
+      load();
+    </script>
+  </body>
+  </html>
+
+
