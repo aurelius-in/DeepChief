@@ -830,6 +830,68 @@ export function ConsoleView({ api }: { api: Api }) {
                 </tbody>
               </table>
               )}
+              {/* Spend visuals: Pareto and Treemap */}
+              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(220px,1fr))', gap: 12, alignItems: 'center' }}>
+                {/* Pareto */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Spend Pareto (Top Vendors)</h3>
+                  {(() => {
+                    const sums: Record<string, number> = {}
+                    ;(spend || []).forEach((s: any) => { const v = String(s.vendor || 'Other'); const amt = Number(s.amount || 0); sums[v] = (sums[v] || 0) + amt })
+                    const entries = Object.entries(sums).map(([vendor, total]) => ({ vendor, total: Number(total) })).sort((a, b) => b.total - a.total).slice(0, 8)
+                    const totalAll = entries.reduce((acc, x) => acc + x.total, 0) || 1
+                    const W = 300, H = 140, pad = 28, bar = 12, gap = 8
+                    let y = pad
+                    return (
+                      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                        {entries.map(e => {
+                          const w = Math.max(4, (e.total / totalAll) * (W - pad * 2))
+                          const g = (
+                            <g key={e.vendor}>
+                              <text x={pad} y={y - 4} fill="#8b99b5" style={{ fontSize: 10 }}>{e.vendor}</text>
+                              <rect x={pad} y={y} width={w} height={bar} fill="#57a6ff">
+                                <title>{`${e.vendor}: $${e.total.toFixed(2)}`}</title>
+                              </rect>
+                            </g>
+                          )
+                          y += bar + gap
+                          return g
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+                {/* Treemap (simple row layout) */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Spend Treemap (Simple)</h3>
+                  {(() => {
+                    const sums: Record<string, number> = {}
+                    ;(spend || []).forEach((s: any) => { const v = String(s.vendor || 'Other'); const amt = Number(s.amount || 0); sums[v] = (sums[v] || 0) + amt })
+                    const entries = Object.entries(sums).map(([vendor, total]) => ({ vendor, total: Number(total) })).sort((a, b) => b.total - a.total).slice(0, 8)
+                    const totalAll = entries.reduce((acc, x) => acc + x.total, 0) || 1
+                    const W = 300, H = 140, pad = 8
+                    const usableW = W - pad * 2, usableH = H - pad * 2
+                    let x = pad
+                    return (
+                      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                        {entries.map((e, i) => {
+                          const w = Math.max(8, (e.total / totalAll) * usableW)
+                          const g = (
+                            <g key={e.vendor}>
+                              <rect x={x} y={pad} width={w} height={usableH} fill={i % 2 === 0 ? '#2ecc71' : '#57a6ff'}>
+                                <title>{`${e.vendor}: $${e.total.toFixed(2)}`}</title>
+                              </rect>
+                              <text x={x + 4} y={pad + 12} fill={colors.bg} style={{ fontSize: 10 }}>{e.vendor}</text>
+                            </g>
+                          )
+                          x += w + 2
+                          return g
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+              </div>
             </div>
           )}
           {activeTab === 'Policies' && (
