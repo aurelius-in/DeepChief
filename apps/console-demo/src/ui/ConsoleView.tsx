@@ -1,3 +1,3 @@
-export { ConsoleView } from '../../../apps/console/src/ui/ConsoleView'
+export { ConsoleView } from '../../../console/src/ui/ConsoleView'
 
 
