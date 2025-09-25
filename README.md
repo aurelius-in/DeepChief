@@ -79,6 +79,7 @@ Spend flow
 - View Spend table for detected issues and open receipts
 
 Docs demo (GitHub Pages)
+- UI/UX Demo: https://aurelius-in.github.io/DeepChief/
 - Build: cd apps/console-demo && npm i && npm run build
 - Output goes to docs/ with 404.html SPA fallback
 - Commit and push to publish via GitHub Pages
