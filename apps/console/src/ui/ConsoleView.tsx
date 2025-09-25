@@ -139,6 +139,11 @@ export function ConsoleView({ api }: { api: Api }) {
     { id: 'GL', label: 'GL' },
     { id: 'Bank', label: 'Bank' },
     { id: 'Matches', label: 'Matches' },
+    { id: 'Flux', label: 'Flux' },
+    { id: 'Forecast', label: 'Forecast' },
+    { id: 'Exceptions', label: 'Exceptions' },
+    { id: 'Spend', label: 'Spend' },
+    { id: 'Policies', label: 'Policies' },
   ], [])
 
   const openReceipt = async (id: string) => {
@@ -502,132 +507,140 @@ export function ConsoleView({ api }: { api: Api }) {
               </table>
             </div>
           )}
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Exceptions</h2>
-          <div style={{ marginBottom: 8 }}>
-            <select value={exceptionStatusFilter} onChange={e => setExceptionStatusFilter(e.target.value)}>
-              <option value="">All Status</option>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">ID</th>
-                <th align="left">Type</th>
-                <th align="left">Status</th>
-                <th align="left">Assignee</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exceptions.filter(r => !exceptionStatusFilter || r.status === exceptionStatusFilter).map((r, i) => (
-                <tr key={i}>
-                  <td>{r.id}</td>
-                  <td>{r.type}</td>
-                  <td>{r.status}</td>
-                  <td>{r.assignee || '-'}</td>
-                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Flux</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Entity</th>
-                <th align="left">Account</th>
-                <th align="left">Period</th>
-                <th align="left">Drivers</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {flux.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.entity_id}</td>
-                  <td>{r.account}</td>
-                  <td>{r.period}</td>
-                  <td>{JSON.stringify(r.drivers)}</td>
-                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Forecast</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Period</th>
-                <th align="left">Params</th>
-                <th align="left">Outputs</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {forecast.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.period}</td>
-                  <td>{JSON.stringify(r.params)}</td>
-                  <td>{JSON.stringify(r.outputs)}</td>
-                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8 }}>
-          <h2 style={{ marginTop: 0 }}>Bank Transactions</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">ID</th>
-                <th align="left">Account</th>
-                <th align="right">Amount</th>
-                <th align="left">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.bank.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.id}</td>
-                  <td>{r.account_ref}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
-                  <td>{r.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Matches</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">GL Entry</th>
-                <th align="left">Bank Txn</th>
-                <th align="right">Confidence</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.matches.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.gl_entry_id}</td>
-                  <td>{r.bank_txn_id}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
-                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {activeTab === 'Flux' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Flux</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Entity</th>
+                    <th align="left">Account</th>
+                    <th align="left">Period</th>
+                    <th align="left">Drivers</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flux.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.entity_id}</td>
+                      <td>{r.account}</td>
+                      <td>{r.period}</td>
+                      <td>{JSON.stringify(r.drivers)}</td>
+                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Forecast' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Forecast</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Period</th>
+                    <th align="left">Params</th>
+                    <th align="left">Outputs</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {forecast.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.period}</td>
+                      <td>{JSON.stringify(r.params)}</td>
+                      <td>{JSON.stringify(r.outputs)}</td>
+                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Exceptions' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Exceptions</h2>
+              <div style={{ marginBottom: 8 }}>
+                <select value={exceptionStatusFilter} onChange={e => setExceptionStatusFilter(e.target.value)}>
+                  <option value="">All Status</option>
+                  <option value="open">Open</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">ID</th>
+                    <th align="left">Type</th>
+                    <th align="left">Status</th>
+                    <th align="left">Assignee</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exceptions.filter(r => !exceptionStatusFilter || r.status === exceptionStatusFilter).map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.id}</td>
+                      <td>{r.type}</td>
+                      <td>{r.status}</td>
+                      <td>{r.assignee || '-'}</td>
+                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Spend' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Spend</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Type</th>
+                    <th align="left">Vendor</th>
+                    <th align="right">Amount</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {spend.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.type}</td>
+                      <td>{r.vendor || '-'}</td>
+                      <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
+                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Policies' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Policies</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Key</th>
+                    <th align="left">Active</th>
+                    <th align="left">Checksum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {policies.map((p, i) => (
+                    <tr key={i}>
+                      <td>{p.key}</td>
+                      <td>{String(p.active)}</td>
+                      <td>{p.checksum?.slice(0, 10)}...</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
         {drawerOpen && (
           <aside style={{ position: 'fixed', top: 0, right: 0, width: 420, maxWidth: '90vw', height: '100vh', background: '#0f1830', borderLeft: '1px solid #1a2a4a', boxShadow: '-12px 0 24px rgba(0,0,0,.3)', zIndex: 3, display: 'flex', flexDirection: 'column' }}>
