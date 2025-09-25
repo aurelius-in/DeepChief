@@ -36,6 +36,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [kpiAudit, setKpiAudit] = useState<any>(null)
   const [kpiDQ, setKpiDQ] = useState<any>(null)
   const [features, setFeatures] = useState<Record<string, any> | null>(null)
+  const [jobRuns, setJobRuns] = useState<any[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -59,6 +60,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setKpiAudit(await api.getKpiAudit()) } catch {}
       try { setKpiDQ(await api.getKpiDQ()) } catch {}
       try { const f = await api.getFeatures(); setFeatures(f.flags || f) } catch {}
+      try { setJobRuns(await api.listJobRuns(20, 0)) } catch {}
     })()
   }, [api, limit, offset])
 
@@ -211,6 +213,31 @@ export function ConsoleView({ api }: { api: Api }) {
                 <strong>DQ Freshness</strong>: GL {kpiDQ.gl_days_since ?? '-'}d, Bank {kpiDQ.bank_days_since ?? '-'}d
               </div>
             )}
+          </section>
+        )}
+        {jobRuns.length > 0 && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Job Runs</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th align="left">ID</th>
+                  <th align="left">Agent</th>
+                  <th align="left">Status</th>
+                  <th align="left">Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobRuns.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.id}</td>
+                    <td>{r.agent}</td>
+                    <td>{r.status}</td>
+                    <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
         )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>

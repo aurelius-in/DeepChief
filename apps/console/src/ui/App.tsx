@@ -118,6 +118,10 @@ const api = {
     const r = await fetch(`/api/features/${encodeURIComponent(name)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }) })
     return r.json()
   },
+  async listJobRuns(limit: number = 20, offset: number = 0) {
+    const r = await fetch(`/api/job_runs?limit=${limit}&offset=${offset}`)
+    return r.json()
+  },
 }
 
 export function App() {

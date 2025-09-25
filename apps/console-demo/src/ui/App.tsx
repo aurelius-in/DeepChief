@@ -49,6 +49,10 @@ const demoApi = {
     localStorage.setItem('dc_features', JSON.stringify(next))
     return next.flags ? { [name]: next.flags[name] } : { [name]: next[name] }
   },
+  async listJobRuns(limit: number = 20, offset: number = 0) {
+    const j = await loadState();
+    return (j.job_runs || []).slice(offset, offset + limit)
+  },
 }
 
 export function App() { return <ConsoleView api={demoApi} /> }
