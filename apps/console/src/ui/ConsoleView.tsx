@@ -433,6 +433,11 @@ export function ConsoleView({ api }: { api: Api }) {
           {activeTab === 'GL' && (
             <div>
               <h2 style={{ marginTop: 0 }}>GL Entries</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
@@ -444,6 +449,7 @@ export function ConsoleView({ api }: { api: Api }) {
                   </tr>
                 </thead>
                 <tbody>
+                  {state.gl.length === 0 && <tr><td colSpan={5}>No GL entries</td></tr>}
                   {state.gl.map((r, i) => (
                     <tr key={i}>
                       <td>{r.id}</td>
@@ -455,11 +461,17 @@ export function ConsoleView({ api }: { api: Api }) {
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
           )}
           {activeTab === 'Bank' && (
             <div>
               <h2 style={{ marginTop: 0 }}>Bank Transactions</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
@@ -470,6 +482,7 @@ export function ConsoleView({ api }: { api: Api }) {
                   </tr>
                 </thead>
                 <tbody>
+                  {state.bank.length === 0 && <tr><td colSpan={4}>No bank transactions</td></tr>}
                   {state.bank.map((r, i) => (
                     <tr key={i}>
                       <td>{r.id}</td>
@@ -480,11 +493,17 @@ export function ConsoleView({ api }: { api: Api }) {
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
           )}
           {activeTab === 'Matches' && (
             <div>
               <h2 style={{ marginTop: 0 }}>Matches</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
@@ -495,16 +514,22 @@ export function ConsoleView({ api }: { api: Api }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.matches.map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.gl_entry_id}</td>
-                      <td>{r.bank_txn_id}</td>
-                      <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
-                      <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
-                    </tr>
-                  ))}
+                  {state.matches.length === 0 && <tr><td colSpan={4}>No matches</td></tr>}
+                  {state.matches.map((r, i) => {
+                    const conf = Number(r.confidence)
+                    const color = conf >= 0.9 ? '#2ecc71' : conf >= 0.7 ? '#f39c12' : '#e74c3c'
+                    return (
+                      <tr key={i}>
+                        <td>{r.gl_entry_id}</td>
+                        <td>{r.bank_txn_id}</td>
+                        <td style={{ textAlign: 'right', color }}>{conf.toFixed(2)}</td>
+                        <td>{r.receipt_id ? <a href={"#/"} onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
+              )}
             </div>
           )}
           {activeTab === 'Flux' && (
@@ -569,6 +594,11 @@ export function ConsoleView({ api }: { api: Api }) {
                   <option value="closed">Closed</option>
                 </select>
               </div>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
@@ -580,22 +610,36 @@ export function ConsoleView({ api }: { api: Api }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {exceptions.filter(r => !exceptionStatusFilter || r.status === exceptionStatusFilter).map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.id}</td>
-                      <td>{r.type}</td>
-                      <td>{r.status}</td>
-                      <td>{r.assignee || '-'}</td>
-                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
-                    </tr>
-                  ))}
+                  {exceptions.length === 0 && <tr><td colSpan={5}>No exceptions</td></tr>}
+                  {exceptions.filter(r => !exceptionStatusFilter || r.status === exceptionStatusFilter).map((r, i) => {
+                    const isOpen = r.status === 'open'
+                    return (
+                      <tr key={i}>
+                        <td>{r.id}</td>
+                        <td>{r.type}</td>
+                        <td>
+                          <span style={{ borderRadius: 999, padding: '2px 8px', fontSize: 12, background: isOpen ? 'rgba(243,156,18,.15)' : 'rgba(46,204,113,.15)', color: isOpen ? '#f39c12' : '#2ecc71' }}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td>{r.assignee || '-'}</td>
+                        <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
+              )}
             </div>
           )}
           {activeTab === 'Spend' && (
             <div>
               <h2 style={{ marginTop: 0 }}>Spend</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
@@ -606,16 +650,25 @@ export function ConsoleView({ api }: { api: Api }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {spend.map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.type}</td>
-                      <td>{r.vendor || '-'}</td>
-                      <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
-                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
-                    </tr>
-                  ))}
+                  {spend.length === 0 && <tr><td colSpan={4}>No spend issues</td></tr>}
+                  {spend.map((r, i) => {
+                    const t = String(r.type || '')
+                    const isDup = t.toLowerCase().includes('dup')
+                    const isSaas = t.toLowerCase().includes('saas')
+                    const bg = isDup || isSaas ? 'rgba(243,156,18,.15)' : 'rgba(139,153,181,.15)'
+                    const fg = isDup || isSaas ? '#f39c12' : '#8b99b5'
+                    return (
+                      <tr key={i}>
+                        <td><span style={{ borderRadius: 999, padding: '2px 8px', fontSize: 12, background: bg, color: fg }}>{r.type}</span></td>
+                        <td>{r.vendor || '-'}</td>
+                        <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
+                        <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
+              )}
             </div>
           )}
           {activeTab === 'Policies' && (
