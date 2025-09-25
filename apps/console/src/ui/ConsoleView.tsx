@@ -691,6 +691,27 @@ export function ConsoleView({ api }: { api: Api }) {
                 </tbody>
               </table>
               )}
+              {/* Reconciliation scatter */}
+              <div style={{ marginTop: 12 }}>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Reconciliation Scatter (confidence)</h3>
+                {(() => {
+                  const W = 300, H = 140, pad = 16
+                  const n = Math.max(1, (state.matches || []).length)
+                  return (
+                    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                      {(state.matches || []).slice(0, 100).map((m: any, i: number) => {
+                        const conf = Number(m.confidence || 0)
+                        const x = pad + (i / Math.max(1, n - 1)) * (W - pad * 2)
+                        const y = H - pad - conf * (H - pad * 2)
+                        const c = conf >= 0.9 ? '#2ecc71' : conf >= 0.7 ? '#f39c12' : '#e74c3c'
+                        return <circle key={i} cx={x} cy={y} r={3} fill={c}>
+                          <title>{`${m.gl_entry_id} ↔ ${m.bank_txn_id} conf=${conf.toFixed(2)}`}</title>
+                        </circle>
+                      })}
+                    </svg>
+                  )
+                })()}
+              </div>
             </div>
           )}
           {activeTab === 'Flux' && (

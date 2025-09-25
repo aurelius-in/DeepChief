@@ -197,6 +197,38 @@
           document.getElementById('panel-controls').appendChild(donut); donut.appendChild(bg); donut.appendChild(fg); donut.appendChild(txt); donut.appendChild(tl);
         } catch {}
 
+        // Forecast cone vs actuals
+        try {
+          const panelFc = document.getElementById('panel-forecast');
+          const W = 320, H = 140, pad = 16;
+          const svgFc = document.createElementNS('http://www.w3.org/2000/svg','svg'); svgFc.setAttribute('width', String(W)); svgFc.setAttribute('height', String(H)); svgFc.setAttribute('viewBox', `0 0 ${W} ${H}`);
+          // Build a small synthetic cone using last cash value as base
+          let base = 150000;
+          try { if (Array.isArray(cash) && cash.length) base = Number(cash[cash.length-1]) || base } catch {}
+          const steps = 10;
+          const p50 = Array.from({length: steps}, (_, i) => base + i*800);
+          const p75 = p50.map((v, i) => v + i*250);
+          const p90 = p50.map((v, i) => v + i*450);
+          const minV = Math.min(base, ...p50);
+          const maxV = Math.max(...p90);
+          const scaleY = (val) => {
+            const r = maxV - minV || 1; return H - pad - ((val - minV)/r)*(H - pad*2);
+          }
+          const scaleX = (i) => pad + (i/(steps-1))*(W - pad*2);
+          const pathArea = (upper, lower) => {
+            const up = upper.map((v,i)=>`${scaleX(i)},${scaleY(v)}`).join(' L ');
+            const lo = lower.slice().reverse().map((v,i)=>`${scaleX(steps-1-i)},${scaleY(v)}`).join(' L ');
+            return `M ${up} L ${lo} Z`;
+          }
+          const a90 = document.createElementNS('http://www.w3.org/2000/svg','path'); a90.setAttribute('d', pathArea(p90, p50)); a90.setAttribute('fill','rgba(87,166,255,.15)');
+          const a75 = document.createElementNS('http://www.w3.org/2000/svg','path'); a75.setAttribute('d', pathArea(p75, p50)); a75.setAttribute('fill','rgba(46,204,113,.18)');
+          const l50 = document.createElementNS('http://www.w3.org/2000/svg','path'); l50.setAttribute('d', `M ${p50.map((v,i)=>`${scaleX(i)},${scaleY(v)}`).join(' L ')}`); l50.setAttribute('fill','none'); l50.setAttribute('stroke','#57a6ff'); l50.setAttribute('stroke-width','2');
+          svgFc.appendChild(a90); svgFc.appendChild(a75); svgFc.appendChild(l50);
+          const title = document.createElement('h3'); title.style.margin='8px 0 6px 0'; title.style.fontSize='14px'; title.style.color='var(--dc-muted)'; title.textContent='Forecast Cone (P50/P75/P90)';
+          const wrapFc = document.createElement('div'); wrapFc.appendChild(title); wrapFc.appendChild(svgFc);
+          panelFc.appendChild(wrapFc);
+        } catch {}
+
         // Exceptions histogram
         try {
           const ex = Array.isArray(j.exceptions) ? j.exceptions : [];
@@ -267,6 +299,25 @@
         put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
         put('bankBody', j.bank||[], r=>tr(r.id, r.account_ref, fmt(r.amount), r.date));
         put('matchBody', j.matches||[], r=>tr(r.gl_entry_id, r.bank_txn_id, fmt(r.confidence), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        // Reconciliation scatter (index vs confidence)
+        try {
+          const mx = Array.isArray(j.matches) ? j.matches : [];
+          const W=300, H=140, pad=16;
+          const scat=document.createElementNS('http://www.w3.org/2000/svg','svg'); scat.setAttribute('width', String(W)); scat.setAttribute('height', String(H)); scat.setAttribute('viewBox', `0 0 ${W} ${H}`);
+          const n = Math.max(1, mx.length);
+          mx.slice(0, 100).forEach((m, i) => {
+            const conf = Number(m.confidence||0);
+            const x = pad + (i/Math.max(1,n-1))*(W - pad*2);
+            const y = H - pad - (conf)*(H - pad*2);
+            const c = conf >= 0.9 ? '#2ecc71' : conf >= 0.7 ? '#f39c12' : '#e74c3c';
+            const dot=document.createElementNS('http://www.w3.org/2000/svg','circle'); dot.setAttribute('cx', String(x)); dot.setAttribute('cy', String(y)); dot.setAttribute('r', '3'); dot.setAttribute('fill', c);
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${m.gl_entry_id} ↔ ${m.bank_txn_id} conf=${conf.toFixed(2)}`; dot.appendChild(tl);
+            scat.appendChild(dot);
+          })
+          const title=document.createElement('h3'); title.style.margin='8px 0 6px 0'; title.style.fontSize='14px'; title.style.color='var(--dc-muted)'; title.textContent='Reconciliation Scatter (confidence)';
+          const holder=document.createElement('div'); holder.appendChild(title); holder.appendChild(scat);
+          document.getElementById('panel-matches').appendChild(holder);
+        } catch {}
         put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
         put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
         put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
