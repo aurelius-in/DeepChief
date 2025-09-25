@@ -13,6 +13,7 @@
       nav.sidenav { position:sticky; top:64px; align-self:start; }
       nav.sidenav a { display:block; padding:8px 10px; margin:4px 0; color:var(--dc-text); text-decoration:none; border-radius:6px; font-size:14px; }
       nav.sidenav a:hover { background:rgba(255,255,255,0.06); }
+      nav.sidenav a.active { background:rgba(255,255,255,0.06); }
       main { min-width:0; }
       section { background:var(--dc-panel); padding:16px; border-radius:8px; margin-bottom:16px; }
       .kpi-grid { display:grid; grid-template-columns: repeat(4, minmax(180px,1fr)); gap:12px; }
@@ -74,7 +75,7 @@
           </div>
           <pre id="whyJson" style="white-space:pre-wrap; display:none"></pre>
         </section>
-        <section>
+        <section id="hub">
           <div class="toolbar">
             <button disabled>Run Ingest</button>
             <button disabled>Run Reconciler</button>
@@ -148,6 +149,66 @@
       function makeTabBar(tabs){ const bar=document.getElementById('tabBar'); tabs.forEach((t,i)=>{ const b=document.createElement('div'); b.className='tab'+(i===0?' active':''); b.textContent=t.label; b.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.getElementById(t.panelId).classList.add('active'); }; bar.appendChild(b); }); document.getElementById(tabs[0].panelId).classList.add('active') }
       function openReceipt(id){ const el=document.getElementById('receiptDrawer'); const pre=document.getElementById('receiptJson'); pre.textContent=''; pre.classList.add('skeleton'); el.classList.add('open'); fetch(`./receipts/${id}.json`).then(r=>r.ok?r.json():Promise.reject()).then(j=>{ pre.classList.remove('skeleton'); pre.textContent=JSON.stringify(j,null,2) }).catch(()=>{ pre.classList.remove('skeleton'); pre.textContent=`{"id":"${id}","verify":"signed","note":"payload not available"}` }) }
       document.getElementById('drawerClose').onclick=()=>{ document.getElementById('receiptDrawer').classList.remove('open') }
+
+      const TAB_MAP = {
+        GL: 'panel-gl',
+        Bank: 'panel-bank',
+        Matches: 'panel-matches',
+        Controls: 'panel-controls',
+        Flux: 'panel-flux',
+        Forecast: 'panel-forecast',
+        Exceptions: 'panel-exceptions',
+        Spend: 'panel-spend',
+        Policies: 'panel-policies',
+      };
+
+      function setActivePanel(panelId){
+        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+        const el = document.getElementById(panelId);
+        if (el) el.classList.add('active');
+        const bar = document.getElementById('tabBar');
+        if (bar){
+          Array.from(bar.children).forEach((t)=>{
+            const label = t.textContent || '';
+            if (TAB_MAP[label] === panelId) t.classList.add('active'); else t.classList.remove('active');
+          });
+        }
+      }
+
+      function showScreens(key){
+        const showIds = new Set();
+        const hideIds = ['close-to-cash','why','hub','audit'];
+        const toolbar = document.querySelector('.toolbar');
+        const tabBar = document.getElementById('tabBar');
+        if (key === 'controls'){ showIds.add('hub'); setActivePanel('panel-controls'); }
+        else if (key === 'spend'){ showIds.add('hub'); setActivePanel('panel-spend'); }
+        else if (key === 'audit'){ showIds.add('audit'); }
+        else { // close/default
+          showIds.add('close-to-cash'); showIds.add('why'); showIds.add('hub'); setActivePanel('panel-gl');
+        }
+        hideIds.forEach(id=>{
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.style.display = showIds.has(id) ? '' : 'none';
+        });
+        if (toolbar) toolbar.style.display = (key==='close') ? '' : 'none';
+        if (tabBar) tabBar.style.display = (key==='close') ? '' : 'none';
+        // highlight nav link
+        document.querySelectorAll('nav.sidenav a').forEach(a=>{
+          const h = (a.getAttribute('href')||'').replace('#','');
+          const isClose = (key==='close' && (h==='close-to-cash'));
+          a.classList.toggle('active', h===key || isClose);
+        });
+        window.scrollTo(0,0);
+      }
+
+      function route(){
+        const raw = (location.hash || '').toLowerCase();
+        if (raw.includes('controls')) return showScreens('controls');
+        if (raw.includes('spend')) return showScreens('spend');
+        if (raw.includes('audit')) return showScreens('audit');
+        return showScreens('close');
+      }
 
       async function load() {
         const j = await fetch('./demo_state.json').then(r=>r.json());
@@ -432,7 +493,8 @@
           document.getElementById('panel-controls').appendChild(holder);
         } catch {}
       }
-      load();
+      load().then(()=>{ route(); });
+      window.addEventListener('hashchange', route);
     </script>
   </body>
   </html>
