@@ -1,0 +1,6 @@
+[
+  { "id": "jr_0001", "agent": "auto_reconciler", "status": "completed", "started_at": "2025-09-24T00:05:00Z", "ended_at": "2025-09-24T00:05:12Z", "duration_ms": 12034, "receipt_id": "00000000-0000-0000-0000-000000000201" },
+  { "id": "jr_0002", "agent": "controls", "status": "completed", "started_at": "2025-09-24T00:10:00Z", "ended_at": "2025-09-24T00:11:10Z", "duration_ms": 70211, "receipt_id": "00000000-0000-0000-0000-000000000202" }
+]
+
+

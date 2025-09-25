@@ -1,0 +1,5 @@
+[
+  { "id": "fx_0001", "entity_id": "E1", "account": "AR", "period": "2025-08", "drivers": {"volume": 0.6, "price": 0.3, "fx": 0.1}, "narrative": "Variance driven by volume and price", "receipt_id": "00000000-0000-0000-0000-000000000003", "created_at": "2025-09-01T00:00:00Z" }
+]
+
+

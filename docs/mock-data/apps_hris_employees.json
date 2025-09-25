@@ -1,0 +1,6 @@
+[
+  { "employee_id": "E-001", "name": "Ava Patel", "department": "Finance", "title": "Senior Analyst", "start_date": "2024-03-01", "status": "active" },
+  { "employee_id": "E-002", "name": "Luis Garcia", "department": "Engineering", "title": "Staff Engineer", "start_date": "2023-07-15", "status": "active" }
+]
+
+

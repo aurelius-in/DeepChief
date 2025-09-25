@@ -1,0 +1,5 @@
+[
+  { "id": "cr_0001", "control_key": "CTRL_ApprovalThreshold", "window_start": "2025-08-01", "window_end": "2025-09-24", "status": "completed", "findings": { "items": [{"je_id": "gl_2025-08-01_0002", "amount_abs": 35000, "flag": "approval_required"}] }, "receipt_id": "00000000-0000-0000-0000-000000000002", "created_at": "2025-09-24T12:00:00Z" }
+]
+
+

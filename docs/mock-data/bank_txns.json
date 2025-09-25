@@ -1,0 +1,6 @@
+[
+  { "id": "bnk_2025-08-01_01", "bank_account_ref": "Cash-Operating-US", "amount": -1234.56, "currency": "USD", "value_date": "2025-08-01", "description": "PAYROLL ACH", "counterparty": "Payroll Co", "metadata": {"bank_change": false}, "imported_at": "2025-08-01T08:05:00Z" },
+  { "id": "bnk_2025-08-02_01", "bank_account_ref": "Cash-Operating-US", "amount": 900.25, "currency": "USD", "value_date": "2025-08-02", "description": "STRIPE PAYOUT", "counterparty": "Stripe", "metadata": {"bank_change": false}, "imported_at": "2025-08-02T07:55:00Z" }
+]
+
+

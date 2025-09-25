@@ -1,0 +1,5 @@
+[
+  { "id": "AP-2001", "vendor_id": "V-0001", "amount": 1234.56, "currency": "USD", "issue_date": "2025-08-01", "due_date": "2025-08-31", "terms": "Net 30", "status": "approved", "paid_date": null, "po_id": "PO-3001", "source_ref": "NS-BILL-2001" }
+]
+
+

@@ -1,0 +1,11 @@
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "type": "match",
+  "created_at": "2025-08-01T09:00:00Z",
+  "hash_b64": "cGF5bG9hZF9oYXNoX2I2NA==",
+  "signature_b64": "c2lnbmF0dXJlX2I2NA==",
+  "public_key_b64": "cHVibGljX2tleV9iNjQ=",
+  "payload": { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0 }
+}
+
+
