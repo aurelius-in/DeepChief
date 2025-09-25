@@ -1,0 +1,35 @@
+{
+  "close_to_cash": {
+    "auto_match_rate": 0.88,
+    "gl_count": 12450,
+    "bank_count": 12190,
+    "matched_count": 10800,
+    "exceptions_open": 34,
+    "exceptions_mttr_days": 3.2,
+    "controls_pass_rate": 0.93,
+    "flux_ready_percent": 0.78
+  },
+  "spend": {
+    "issues_total": 22,
+    "duplicates": 5,
+    "duplicate_detected_value": 18234.12,
+    "saas": 14,
+    "saas_waste_estimate": 4250.50,
+    "touchless_invoices_percent": 0.67
+  },
+  "treasury": {
+    "projected_buffer_days": 46,
+    "covenant_risk_flags": 0
+  },
+  "audit": {
+    "receipts_total": 642,
+    "receipts_by_type": {"match": 430, "control_run": 120, "agent_run": 92},
+    "pbc_requests_served": 37
+  },
+  "dq": {
+    "gl_days_since": 0,
+    "bank_days_since": 0
+  }
+}
+
+

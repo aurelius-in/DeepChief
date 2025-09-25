@@ -1,0 +1,14 @@
+{
+  "ingest_enabled": true,
+  "reconciler_enabled": true,
+  "controls_enabled": true,
+  "flux_enabled": true,
+  "forecast_enabled": true,
+  "exceptions_enabled": true,
+  "treasury_enabled": true,
+  "dq_sentinel_enabled": true,
+  "spend_duplicate_enabled": true,
+  "spend_saas_enabled": true
+}
+
+

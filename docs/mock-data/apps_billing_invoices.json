@@ -1,0 +1,6 @@
+[
+  { "invoice_id": "BILL-9001", "customer": "Contoso", "amount": 5000.00, "currency": "USD", "issue_date": "2025-08-05", "due_date": "2025-09-04", "status": "open" },
+  { "invoice_id": "BILL-9002", "customer": "Fabrikam", "amount": 3200.00, "currency": "USD", "issue_date": "2025-08-12", "due_date": "2025-09-11", "status": "paid" }
+]
+
+

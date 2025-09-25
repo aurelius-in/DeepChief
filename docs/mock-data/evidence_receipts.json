@@ -1,0 +1,6 @@
+[
+  { "id": "00000000-0000-0000-0000-000000000001", "type": "match", "hash": "u2FsdGVkX1-hash1", "signature": "sig1", "created_at": "2025-08-01T09:00:00Z" },
+  { "id": "00000000-0000-0000-0000-000000000002", "type": "control_run", "hash": "u2FsdGVkX1-hash2", "signature": "sig2", "created_at": "2025-09-24T12:00:00Z" }
+]
+
+
