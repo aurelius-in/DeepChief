@@ -48,6 +48,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [tableDensity, setTableDensity] = useState<'comfortable' | 'compact'>('comfortable')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [sort, setSort] = useState<{ tab: string, column: string, dir: 'asc' | 'desc' } | null>(null)
+  const [pinnedFirstColumn, setPinnedFirstColumn] = useState<boolean>(false)
 
   useEffect(() => {
     ;(async () => {
@@ -515,6 +516,9 @@ export function ConsoleView({ api }: { api: Api }) {
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <input type="checkbox" checked={tableDensity === 'compact'} onChange={e => setTableDensity(e.target.checked ? 'compact' : 'comfortable')} /> Compact
             </label>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={pinnedFirstColumn} onChange={e => setPinnedFirstColumn(e.target.checked)} /> Pin first column
+            </label>
             <span style={{ color: '#8b99b5' }}>Last run: {jobRuns[0]?.ended_at || jobRuns[0]?.started_at || '—'}</span>
           </div>
           {activeTab === 'GL' && (
@@ -528,7 +532,7 @@ export function ConsoleView({ api }: { api: Api }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
                 <thead>
                   <tr>
-                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'id', dir: prev?.tab==='GL' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
+                    <th align="left" style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'id', dir: prev?.tab==='GL' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
                     <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'entity_id', dir: prev?.tab==='GL' && prev.column==='entity_id' && prev.dir==='asc' ? 'desc':'asc' }))}>Entity</button></th>
                     <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'account', dir: prev?.tab==='GL' && prev.column==='account' && prev.dir==='asc' ? 'desc':'asc' }))}>Account</button></th>
                     <th align="right"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'amount', dir: prev?.tab==='GL' && prev.column==='amount' && prev.dir==='asc' ? 'desc':'asc' }))}>Amount</button></th>
@@ -555,7 +559,7 @@ export function ConsoleView({ api }: { api: Api }) {
                     if (rows.length === 0) return (<tr><td colSpan={5}>No GL entries</td></tr>)
                     return rows.map((r: any, i: number) => (
                       <tr key={i}>
-                        <td>{r.id}</td>
+                      <td style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}>{r.id}</td>
                         <td>{r.entity_id}</td>
                         <td>{r.account}</td>
                         <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
@@ -579,7 +583,7 @@ export function ConsoleView({ api }: { api: Api }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
                 <thead>
                   <tr>
-                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'id', dir: prev?.tab==='Bank' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
+                    <th align="left" style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'id', dir: prev?.tab==='Bank' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
                     <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'account_ref', dir: prev?.tab==='Bank' && prev.column==='account_ref' && prev.dir==='asc' ? 'desc':'asc' }))}>Account</button></th>
                     <th align="right"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'amount', dir: prev?.tab==='Bank' && prev.column==='amount' && prev.dir==='asc' ? 'desc':'asc' }))}>Amount</button></th>
                     <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'date', dir: prev?.tab==='Bank' && prev.column==='date' && prev.dir==='asc' ? 'desc':'asc' }))}>Date</button></th>
@@ -605,7 +609,7 @@ export function ConsoleView({ api }: { api: Api }) {
                     if (rows.length === 0) return (<tr><td colSpan={4}>No bank transactions</td></tr>)
                     return rows.map((r: any, i: number) => (
                       <tr key={i}>
-                        <td>{r.id}</td>
+                      <td style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}>{r.id}</td>
                         <td>{r.account_ref}</td>
                         <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
                         <td>{r.date}</td>
@@ -628,7 +632,7 @@ export function ConsoleView({ api }: { api: Api }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
                 <thead>
                   <tr>
-                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'gl_entry_id', dir: prev?.tab==='Matches' && prev.column==='gl_entry_id' && prev.dir==='asc' ? 'desc':'asc' }))}>GL Entry</button></th>
+                    <th align="left" style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'gl_entry_id', dir: prev?.tab==='Matches' && prev.column==='gl_entry_id' && prev.dir==='asc' ? 'desc':'asc' }))}>GL Entry</button></th>
                     <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'bank_txn_id', dir: prev?.tab==='Matches' && prev.column==='bank_txn_id' && prev.dir==='asc' ? 'desc':'asc' }))}>Bank Txn</button></th>
                     <th align="right"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'confidence', dir: prev?.tab==='Matches' && prev.column==='confidence' && prev.dir==='asc' ? 'desc':'asc' }))}>Confidence</button></th>
                     <th align="left">Receipt</th>
@@ -657,7 +661,7 @@ export function ConsoleView({ api }: { api: Api }) {
                       const color = conf >= 0.9 ? '#2ecc71' : conf >= 0.7 ? '#f39c12' : '#e74c3c'
                       return (
                         <tr key={i}>
-                          <td>{r.gl_entry_id}</td>
+                          <td style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}>{r.gl_entry_id}</td>
                           <td>{r.bank_txn_id}</td>
                           <td style={{ textAlign: 'right', color }}>{conf.toFixed(2)}</td>
                           <td>{r.receipt_id ? <a href={"#/"} onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
