@@ -82,10 +82,15 @@ export function ConsoleView({ api }: { api: Api }) {
               <div>Bank: {kpi.bank_count}</div>
               <div>Matched: {kpi.matched_count}</div>
               <div>Exceptions Open: {kpi.exceptions_open ?? '-'}</div>
+              <div>Exceptions MTTR: {kpi.exceptions_mttr_days != null ? `${kpi.exceptions_mttr_days.toFixed(1)}d` : '-'}</div>
               <div>Controls Pass Rate: {kpi.controls_pass_rate != null ? `${kpi.controls_pass_rate.toFixed(1)}%` : '-'}</div>
+              <div>Flux Ready: {kpi.flux_ready_percent != null ? `${kpi.flux_ready_percent.toFixed(1)}%` : '-'}</div>
               <div>| Spend Issues: {kpiSpend?.issues_total ?? '-'}</div>
               <div>Duplicates: {kpiSpend?.duplicates ?? '-'}</div>
+              <div>Dup Value: {kpiSpend?.duplicate_detected_value != null ? `$${Number(kpiSpend.duplicate_detected_value).toFixed(2)}` : '-'}</div>
               <div>SaaS: {kpiSpend?.saas ?? '-'}</div>
+              <div>Waste Est.: {kpiSpend?.saas_waste_estimate != null ? `$${Number(kpiSpend.saas_waste_estimate).toFixed(0)}` : '-'}</div>
+              <div>Touchless %: {kpiSpend?.touchless_invoices_percent != null ? `${kpiSpend.touchless_invoices_percent.toFixed(1)}%` : '-'}</div>
               <div>| Buffer Days: {kpiTreasury?.projected_buffer_days ?? '-'}</div>
               <div>Flags: {Array.isArray(kpiTreasury?.covenant_risk_flags) ? kpiTreasury.covenant_risk_flags.map((f: any) => `${f.name}:${f.status}`).join(', ') : '-'}</div>
             </div>

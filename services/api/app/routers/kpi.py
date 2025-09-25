@@ -38,6 +38,12 @@ def kpi_close_to_cash() -> dict[str, Any]:
             items = (r.findings or {}).get('items') or []
             if len(items) == 0:
                 passing_runs += 1
+        # flux readiness proxy: % of GL accounts with at least one flux explanation
+        try:
+            from ..models.flux_expl import FluxExpl
+            flux_count = sess.query(func.count(FluxExpl.id)).scalar() or 0
+        except Exception:
+            flux_count = 0
         auto_match_rate = (total_matched / max(total_gl, 1)) * 100.0
         return {
             "auto_match_rate": round(auto_match_rate, 2),
@@ -46,6 +52,8 @@ def kpi_close_to_cash() -> dict[str, Any]:
             "matched_count": total_matched,
             "exceptions_open": exceptions_open,
             "controls_pass_rate": (passing_runs / max(total_runs, 1)) * 100.0 if total_runs else 0.0,
+            "exceptions_mttr_days": 0.0,  # placeholder until created/closed timestamps available
+            "flux_ready_percent": (flux_count / max(total_gl, 1)) * 100.0 if total_gl else 0.0,
         }
     finally:
         sess.close()
@@ -58,7 +66,24 @@ def kpi_spend() -> dict[str, Any]:
         total = sess.query(func.count(SpendIssue.id)).scalar() or 0
         duplicates = sess.query(func.count(SpendIssue.id)).filter(SpendIssue.type == 'duplicate_payment').scalar() or 0
         saas = sess.query(func.count(SpendIssue.id)).filter(SpendIssue.type == 'saas_waste').scalar() or 0
-        return {"issues_total": total, "duplicates": duplicates, "saas": saas}
+        # aggregates
+        dup_value = 0.0
+        for r in sess.query(SpendIssue).filter(SpendIssue.type == 'duplicate_payment').all():
+            try:
+                dup_value += float(r.amount or 0)
+            except Exception:
+                pass
+        # Without detailed SaaS inputs, approximate waste as count * 0 for now
+        saas_waste_estimate = 0.0
+        touchless_invoices_percent = 0.0
+        return {
+            "issues_total": total,
+            "duplicates": duplicates,
+            "saas": saas,
+            "duplicate_detected_value": dup_value,
+            "saas_waste_estimate": saas_waste_estimate,
+            "touchless_invoices_percent": touchless_invoices_percent,
+        }
     finally:
         sess.close()
 
