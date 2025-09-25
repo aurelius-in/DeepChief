@@ -103,7 +103,7 @@ const api = {
     return r.json()
   },
   async runDQ() {
-    const r = await fetch('/api/agents/dq/run', { method: 'POST' })
+    const r = await fetch('/api/agents/dq_sentinel/run', { method: 'POST' })
     return r.json()
   },
 }
