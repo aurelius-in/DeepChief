@@ -12,6 +12,7 @@ from ..models.reconcile_match import ReconcileMatch
 from ..models.spend_issue import SpendIssue
 from ..models.exception_case import ExceptionCase
 from ..models.control_run import ControlRun
+from ..models.evidence_receipt import EvidenceReceipt
 
 
 router = APIRouter(prefix="/kpi", tags=["kpi"])
@@ -71,5 +72,19 @@ def kpi_treasury() -> dict[str, Any]:
             {"name": "Leverage", "status": "watch"},
         ],
     }
+
+
+@router.get("/audit")
+def kpi_audit() -> dict[str, Any]:
+    sess = _session()
+    try:
+        receipts_total = sess.query(func.count(EvidenceReceipt.id)).scalar() or 0
+        return {
+            "receipts_total": receipts_total,
+            "receipts_by_type": {},
+            "pbc_served": 0,
+        }
+    finally:
+        sess.close()
 
 

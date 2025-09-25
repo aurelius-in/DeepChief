@@ -100,3 +100,34 @@ def verify_by_id(receipt_id: str) -> Dict[str, Any]:
         sess.close()
 
 
+@router.get("/pbc_pack")
+def pbc_pack(ids: str) -> StreamingResponse:
+    id_list: List[str] = [x for x in ids.split(',') if x]
+    mem = BytesIO()
+    index: List[Dict[str, Any]] = []
+    with zipfile.ZipFile(mem, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+        sess = _session()
+        try:
+            for rid in id_list:
+                rec = sess.get(EvidenceReceipt, rid)
+                if not rec:
+                    continue
+                try:
+                    resp = requests.get(rec.payload_url, timeout=10)
+                    resp.raise_for_status()
+                    zf.writestr(f"receipts/{rid}.json", resp.content)
+                    index.append({
+                        "id": rec.id,
+                        "sha256_b64": rec.sha256_b64,
+                        "public_key_b64": rec.public_key_b64,
+                        "payload_url": rec.payload_url,
+                    })
+                except requests.RequestException:
+                    continue
+        finally:
+            sess.close()
+        zf.writestr("index.json", json.dumps({"receipts": index}, indent=2))
+    mem.seek(0)
+    return StreamingResponse(mem, media_type='application/zip', headers={'Content-Disposition': 'attachment; filename="pbc_pack.zip"'})
+
+
