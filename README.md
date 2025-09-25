@@ -79,6 +79,7 @@ Spend flow
 - View Spend table for detected issues and open receipts
 
 Docs demo (GitHub Pages)
+- UI/UX Demo: https://aurelius-in.github.io/DeepChief/
 - Build: cd apps/console-demo && npm i && npm run build
 - Output goes to docs/ with 404.html SPA fallback
 - Commit and push to publish via GitHub Pages
@@ -385,4 +386,4 @@ Issues and PRs welcome. Please avoid adding opaque logic without receipts or pol
 See my Project Gallery on my site ReliableAINetwork.com.
 LinkedIn: linkedin.com/in/oellison • GitHub: github.com/aurelius-in
 
-*DeepChief helps teams do more with the same headcount while raising trust. If you’re hiring for AI platform, agentic finance, or governance, this repo showcases how I design for reliability, auditability, and scale.*
+*DeepChief helps teams do more with the same headcount while raising trust. For prospective customers and investors evaluating agentic finance, governance, and auditability products, this repo demonstrates our approach to reliability, traceability, and scale. To discuss pilots, partnerships, or investment, please reach out.*
