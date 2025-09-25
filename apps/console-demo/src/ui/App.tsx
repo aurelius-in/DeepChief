@@ -53,6 +53,8 @@ const demoApi = {
     const j = await loadState();
     return (j.job_runs || []).slice(offset, offset + limit)
   },
+  async listInvoices(limit: number = 100, offset: number = 0) { const j = await loadState(); const arr = j.invoices || []; return arr.slice(offset, offset + limit) },
+  async listEmployees(limit: number = 100, offset: number = 0) { const j = await loadState(); const arr = j.employees || []; return arr.slice(offset, offset + limit) },
 }
 
 export function App() { return <ConsoleView api={demoApi} /> }

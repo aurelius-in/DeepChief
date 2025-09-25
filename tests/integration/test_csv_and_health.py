@@ -15,6 +15,8 @@ def test_csv_exports_and_deps_health():
         "/flux/flux.csv",
         "/forecast/forecast.csv",
         "/spend/spend.csv",
+        "/apps/billing/invoices.csv",
+        "/apps/hris/employees.csv",
     ]:
         r = client.get(path)
         assert r.status_code == 200

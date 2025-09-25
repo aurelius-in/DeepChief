@@ -123,6 +123,14 @@ const api = {
     const r = await fetch(`/api/job_runs?limit=${limit}&offset=${offset}`)
     return r.json()
   },
+  async listInvoices(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/apps/billing/invoices?limit=${limit}&offset=${offset}`)
+    return r.json()
+  },
+  async listEmployees(limit: number = 100, offset: number = 0) {
+    const r = await fetch(`/api/apps/hris/employees?limit=${limit}&offset=${offset}`)
+    return r.json()
+  },
 }
 
 export function App() {

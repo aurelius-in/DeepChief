@@ -37,6 +37,8 @@ export function ConsoleView({ api }: { api: Api }) {
   const [kpiDQ, setKpiDQ] = useState<any>(null)
   const [features, setFeatures] = useState<Record<string, any> | null>(null)
   const [jobRuns, setJobRuns] = useState<any[]>([])
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [employees, setEmployees] = useState<any[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -61,6 +63,8 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setKpiDQ(await api.getKpiDQ()) } catch {}
       try { const f = await api.getFeatures(); setFeatures(f.flags || f) } catch {}
       try { setJobRuns(await api.listJobRuns(20, 0)) } catch {}
+      try { setInvoices(await api.listInvoices(20, 0)) } catch {}
+      try { setEmployees(await api.listEmployees(20, 0)) } catch {}
     })()
   }, [api, limit, offset, exceptionStatusFilter])
 
@@ -118,6 +122,54 @@ export function ConsoleView({ api }: { api: Api }) {
           <h2 style={{ marginTop: 0 }}>Why Card</h2>
           <JsonView data={whyCard} style={darkStyles} />
         </section>
+        {invoices.length > 0 && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Billing Invoices</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th align="left">Invoice</th>
+                  <th align="left">Vendor</th>
+                  <th align="right">Amount</th>
+                  <th align="left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.invoice_id}</td>
+                    <td>{r.vendor}</td>
+                    <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
+                    <td>{r.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+        {employees.length > 0 && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>HRIS Employees</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th align="left">ID</th>
+                  <th align="left">Name</th>
+                  <th align="left">Department</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.employee_id}</td>
+                    <td>{r.name}</td>
+                    <td>{r.department}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
         {features && (
           <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
             <h2 style={{ marginTop: 0 }}>Feature Flags</h2>
@@ -177,6 +229,8 @@ export function ConsoleView({ api }: { api: Api }) {
             <a href={`/api/flux/flux.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Flux CSV</a>
             <a href={`/api/forecast/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Forecast CSV</a>
             <a href={`/api/spend/spend.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Spend CSV</a>
+            <a href={`/api/apps/billing/invoices.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Invoices CSV</a>
+            <a href={`/api/apps/hris/employees.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Employees CSV</a>
             <span>|</span>
             <span>Page:</span>
             <input type="number" min={1} value={Math.floor(offset / Math.max(1, limit)) + 1}

@@ -33,6 +33,14 @@
     { "id": "jr_2", "agent": "flux", "status": "completed", "receipt_id": "00000000-0000-0000-0000-000000000003" },
     { "id": "jr_3", "agent": "forecast", "status": "completed", "receipt_id": "00000000-0000-0000-0000-000000000004" }
   ],
+  "invoices": [
+    { "invoice_id": "INV-1001", "vendor": "Acme", "amount": 123.45, "status": "open" },
+    { "invoice_id": "INV-1002", "vendor": "Globex", "amount": 540.00, "status": "paid" }
+  ],
+  "employees": [
+    { "employee_id": "E-001", "name": "Analyst One", "department": "Finance" },
+    { "employee_id": "E-002", "name": "Controller Two", "department": "Finance" }
+  ],
   "matches": [
     { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" },
     { "gl_entry_id": "gl_1_cash", "bank_txn_id": "bnk_1", "confidence": 0.98, "receipt_id": "00000000-0000-0000-0000-000000000008" }
