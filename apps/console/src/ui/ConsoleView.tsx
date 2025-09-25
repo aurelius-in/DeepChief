@@ -65,6 +65,24 @@ export function ConsoleView({ api }: { api: Api }) {
   }, [api, limit, offset, exceptionStatusFilter])
 
   const sample = useMemo(() => state.why, [state])
+  const whyCard = useMemo(() => {
+    const hasWhy = sample && typeof sample === 'object' && Object.keys(sample || {}).length > 0
+    if (hasWhy) return sample
+    if (controls && controls.length > 0) {
+      const c = controls[0]
+      const items = (c?.findings?.items as any[]) || []
+      const first = items[0] || {}
+      return {
+        policy: c.control_key,
+        inputs: first,
+        tools_used: ['rule-engine'],
+        result: { findings_count: items.length, window_start: c.window_start, window_end: c.window_end },
+        receipt: c.receipt_id ? { id: c.receipt_id, url: `/receipts/${c.receipt_id}` } : null,
+        kpi_snapshot: kpi || {},
+      }
+    }
+    return { kpi_snapshot: kpi || {} }
+  }, [sample, controls, kpi])
 
   return (
     <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text }}>
@@ -98,7 +116,7 @@ export function ConsoleView({ api }: { api: Api }) {
         )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Why Card</h2>
-          <JsonView data={sample} style={darkStyles} />
+          <JsonView data={whyCard} style={darkStyles} />
         </section>
         {features && (
           <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>

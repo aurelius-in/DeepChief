@@ -1,0 +1,5 @@
+[
+  { "invoice_id": "INV-1001", "vendor": "Acme", "amount": 123.45, "status": "open" },
+  { "invoice_id": "INV-1002", "vendor": "Globex", "amount": 540.00, "status": "paid" }
+]
+
