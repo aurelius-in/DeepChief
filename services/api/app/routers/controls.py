@@ -5,6 +5,7 @@ from typing import Any
 import uuid
 
 from fastapi import APIRouter
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
 from ..core.db import SessionLocal
@@ -125,6 +126,20 @@ def latest_control_runs(limit: int = 5) -> list[dict[str, Any]]:
             }
             for r in rows
         ]
+    finally:
+        sess.close()
+
+
+@router.get("/latest.csv", response_class=PlainTextResponse)
+def export_latest_controls_csv(limit: int = 100) -> str:
+    sess = _session()
+    try:
+        rows = sess.query(ControlRun).order_by(ControlRun.window_end.desc()).limit(limit).all()
+        lines = ["control_key,window_start,window_end,findings_count,receipt_id"]
+        for r in rows:
+            count = len((r.findings or {}).get('items') or [])
+            lines.append(f"{r.control_key},{r.window_start.isoformat()},{r.window_end.isoformat()},{count},{r.receipt_id}")
+        return "\n".join(lines) + "\n"
     finally:
         sess.close()
 
