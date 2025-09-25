@@ -246,7 +246,7 @@ export function ConsoleView({ api }: { api: Api }) {
             </div>
           </section>
         )}
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16, position: 'sticky', top: 72, zIndex: 1 }}>
           <h2 style={{ marginTop: 0 }}>Receipt Verify</h2>
           <form onSubmit={async (e) => { e.preventDefault(); const res = await api.verifyReceipt(verifyForm); setVerifyResult(res.valid ? 'Valid' : 'Invalid') }}>
             <div style={{ display: 'grid', gap: 8 }}>
@@ -262,7 +262,7 @@ export function ConsoleView({ api }: { api: Api }) {
             <button onClick={async () => { if (!verifyId.trim()) return; const res = await api.verifyReceiptById(verifyId.trim()); alert(`hash_matches=${res.hash_matches}, signature_valid=${res.signature_valid}`) }}>Verify by ID</button>
           </div>
         </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16, position: 'sticky', top: 160, zIndex: 1 }}>
           <h2 style={{ marginTop: 0 }}>Actions</h2>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
@@ -382,52 +382,90 @@ export function ConsoleView({ api }: { api: Api }) {
           </section>
         )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
-          <h2 style={{ marginTop: 0 }}>GL Entries</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">ID</th>
-                <th align="left">Entity</th>
-                <th align="left">Account</th>
-                <th align="right">Amount</th>
-                <th align="left">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.gl.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.id}</td>
-                  <td>{r.entity_id}</td>
-                  <td>{r.account}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
-                  <td>{r.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Spend</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Type</th>
-                <th align="left">Vendor</th>
-                <th align="right">Amount</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {spend.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.type}</td>
-                  <td>{r.vendor || '-'}</td>
-                  <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: 'flex', gap: 8, borderBottom: `1px solid #1a2a4a`, marginBottom: 8 }}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ padding: '8px 10px', borderRadius: 6, background: activeTab === t.id ? '#0f1830' : 'transparent', border: '1px solid #1a2a4a', color: colors.text }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {activeTab === 'GL' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>GL Entries</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">ID</th>
+                    <th align="left">Entity</th>
+                    <th align="left">Account</th>
+                    <th align="right">Amount</th>
+                    <th align="left">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.gl.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.id}</td>
+                      <td>{r.entity_id}</td>
+                      <td>{r.account}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
+                      <td>{r.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Bank' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Bank Transactions</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">ID</th>
+                    <th align="left">Account</th>
+                    <th align="right">Amount</th>
+                    <th align="left">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.bank.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.id}</td>
+                      <td>{r.account_ref}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
+                      <td>{r.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Matches' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Matches</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">GL Entry</th>
+                    <th align="left">Bank Txn</th>
+                    <th align="right">Confidence</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.matches.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.gl_entry_id}</td>
+                      <td>{r.bank_txn_id}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
+                      <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>Exceptions</h2>
