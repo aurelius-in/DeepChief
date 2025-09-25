@@ -193,7 +193,8 @@
           const bg=document.createElementNS('http://www.w3.org/2000/svg','circle'); bg.setAttribute('cx',cx); bg.setAttribute('cy',cy); bg.setAttribute('r',r); bg.setAttribute('fill','none'); bg.setAttribute('stroke','#1a2a4a'); bg.setAttribute('stroke-width','10');
           const fg=document.createElementNS('http://www.w3.org/2000/svg','circle'); fg.setAttribute('cx',cx); fg.setAttribute('cy',cy); fg.setAttribute('r',r); fg.setAttribute('fill','none'); fg.setAttribute('stroke','#2ecc71'); fg.setAttribute('stroke-width','10'); fg.setAttribute('stroke-dasharray', `${dash} ${c-dash}`); fg.setAttribute('transform',`rotate(-90 ${cx} ${cy})`);
           const txt=document.createElementNS('http://www.w3.org/2000/svg','text'); txt.setAttribute('x', String(cx)); txt.setAttribute('y', String(cy+5)); txt.setAttribute('text-anchor','middle'); txt.setAttribute('fill','#e6edf6'); txt.textContent = `${pct.toFixed(1)}%`;
-          document.getElementById('panel-controls').appendChild(donut); donut.appendChild(bg); donut.appendChild(fg); donut.appendChild(txt);
+          const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `Controls pass rate: ${pct.toFixed(1)}%`;
+          document.getElementById('panel-controls').appendChild(donut); donut.appendChild(bg); donut.appendChild(fg); donut.appendChild(txt); donut.appendChild(tl);
         } catch {}
 
         // Exceptions histogram
@@ -211,6 +212,7 @@
             const x = pad + i*(bw+8);
             const y = svgH - pad - h;
             const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',bw); rect.setAttribute('height',h); rect.setAttribute('fill','#57a6ff');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${t}: ${v}`; rect.appendChild(tl);
             const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x + bw/2)); label.setAttribute('y', String(svgH - 4)); label.setAttribute('text-anchor','middle'); label.setAttribute('fill','#8b99b5'); label.setAttribute('font-size','10'); label.textContent = t;
             hist.appendChild(rect); hist.appendChild(label);
           })
@@ -227,6 +229,7 @@
           vals.forEach(d=>{
             const w = Math.max(10, Math.abs(d.value)* (svgW - pad*2 - 40));
             const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x', x); rect.setAttribute('y', String(y - barH/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(barH)); rect.setAttribute('fill', d.value>=0 ? '#2ecc71' : '#e74c3c');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${d.key}: ${(d.value*100).toFixed(1)}%`; rect.appendChild(tl);
             const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x + w + 4)); label.setAttribute('y', String(y + 4)); label.setAttribute('fill','#e6edf6'); label.setAttribute('font-size','11'); label.textContent = d.key;
             wf.appendChild(rect); wf.appendChild(label);
             y += barH + gap;
@@ -258,7 +261,7 @@
 
         // Helpers
         const put = (id, rows, render) => { const tb=document.getElementById(id); rows.forEach((r,i)=>tb.appendChild(render(r,i))); }
-        const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.onclick=(e)=>{ e.preventDefault(); openReceipt(c.text) }; td.appendChild(a);} else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
+        const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.onclick=(e)=>{ e.preventDefault(); openReceipt(c.text) }; td.appendChild(a);} else if (c instanceof HTMLElement) { td.appendChild(c) } else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
 
         // Data fill
         put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
@@ -267,8 +270,8 @@
         put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
         put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
         put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('excBody', j.exceptions||[], r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip.textContent, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
-        put('spendBody', j.spend||[], r=>tr(r.type, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('excBody', j.exceptions||[], r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
+        put('spendBody', j.spend||[], r=>{ const t=String(r.type||''); const isDup=t.toLowerCase().includes('dup'); const isSaas=t.toLowerCase().includes('saas'); const chip= mkChip(r.type, (isDup||isSaas)?'warn':'ok'); return tr(chip, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
         put('polBody', j.policies||[], r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
 
         // Audit summary
