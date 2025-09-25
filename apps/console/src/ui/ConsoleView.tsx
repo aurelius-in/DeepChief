@@ -23,6 +23,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [exceptions, setExceptions] = useState<any[]>([])
   const [spend, setSpend] = useState<any[]>([])
   const [kpiSpend, setKpiSpend] = useState<any>(null)
+  const [kpiTreasury, setKpiTreasury] = useState<any>(null)
   const [packIds, setPackIds] = useState<string>("")
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setExceptions(await api.listExceptions()) } catch {}
       try { setSpend(await api.listSpend()) } catch {}
       try { setKpiSpend(await api.getKpiSpend()) } catch {}
+      try { setKpiTreasury(await api.getKpiTreasury()) } catch {}
     })()
   }, [api])
 
@@ -64,6 +66,8 @@ export function ConsoleView({ api }: { api: Api }) {
               <div>| Spend Issues: {kpiSpend?.issues_total ?? '-'}</div>
               <div>Duplicates: {kpiSpend?.duplicates ?? '-'}</div>
               <div>SaaS: {kpiSpend?.saas ?? '-'}</div>
+              <div>| Buffer Days: {kpiTreasury?.projected_buffer_days ?? '-'}</div>
+              <div>Flags: {Array.isArray(kpiTreasury?.covenant_risk_flags) ? kpiTreasury.covenant_risk_flags.map((f: any) => `${f.name}:${f.status}`).join(', ') : '-'}</div>
             </div>
           </section>
         )}
