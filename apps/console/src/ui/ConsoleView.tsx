@@ -44,6 +44,10 @@ export function ConsoleView({ api }: { api: Api }) {
   const [drawerId, setDrawerId] = useState<string>("")
   const [drawerJson, setDrawerJson] = useState<any>(null)
   const [showWhyJson, setShowWhyJson] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [tableDensity, setTableDensity] = useState<'comfortable' | 'compact'>('comfortable')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sort, setSort] = useState<{ tab: string, column: string, dir: 'asc' | 'desc' } | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -506,6 +510,13 @@ export function ConsoleView({ api }: { api: Api }) {
               </button>
             ))}
           </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+            <input placeholder="Search (id/vendor/account)" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ minWidth: 260 }} />
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={tableDensity === 'compact'} onChange={e => setTableDensity(e.target.checked ? 'compact' : 'comfortable')} /> Compact
+            </label>
+            <span style={{ color: '#8b99b5' }}>Last run: {jobRuns[0]?.ended_at || jobRuns[0]?.started_at || '—'}</span>
+          </div>
           {activeTab === 'GL' && (
             <div>
               <h2 style={{ marginTop: 0 }}>GL Entries</h2>
@@ -514,27 +525,44 @@ export function ConsoleView({ api }: { api: Api }) {
                   {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
                 </div>
               ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
                 <thead>
                   <tr>
-                    <th align="left">ID</th>
-                    <th align="left">Entity</th>
-                    <th align="left">Account</th>
-                    <th align="right">Amount</th>
-                    <th align="left">Date</th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'id', dir: prev?.tab==='GL' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'entity_id', dir: prev?.tab==='GL' && prev.column==='entity_id' && prev.dir==='asc' ? 'desc':'asc' }))}>Entity</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'account', dir: prev?.tab==='GL' && prev.column==='account' && prev.dir==='asc' ? 'desc':'asc' }))}>Account</button></th>
+                    <th align="right"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'amount', dir: prev?.tab==='GL' && prev.column==='amount' && prev.dir==='asc' ? 'desc':'asc' }))}>Amount</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'date', dir: prev?.tab==='GL' && prev.column==='date' && prev.dir==='asc' ? 'desc':'asc' }))}>Date</button></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {state.gl.length === 0 && <tr><td colSpan={5}>No GL entries</td></tr>}
-                  {state.gl.map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.id}</td>
-                      <td>{r.entity_id}</td>
-                      <td>{r.account}</td>
-                      <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
-                      <td>{r.date}</td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    const q = searchQuery.toLowerCase().trim()
+                    const rows = (state.gl || []).filter((r: any) => {
+                      if (!q) return true
+                      return String(r.id).toLowerCase().includes(q) || String(r.entity_id).toLowerCase().includes(q) || String(r.account).toLowerCase().includes(q)
+                    })
+                    if (sort?.tab === 'GL') {
+                      rows.sort((a: any, b: any) => {
+                        const dir = sort.dir === 'asc' ? 1 : -1
+                        const col = sort.column
+                        const va = a[col]
+                        const vb = b[col]
+                        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
+                        return String(va).localeCompare(String(vb)) * dir
+                      })
+                    }
+                    if (rows.length === 0) return (<tr><td colSpan={5}>No GL entries</td></tr>)
+                    return rows.map((r: any, i: number) => (
+                      <tr key={i}>
+                        <td>{r.id}</td>
+                        <td>{r.entity_id}</td>
+                        <td>{r.account}</td>
+                        <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
+                        <td>{r.date}</td>
+                      </tr>
+                    ))
+                  })()}
                 </tbody>
               </table>
               )}
@@ -548,25 +576,42 @@ export function ConsoleView({ api }: { api: Api }) {
                   {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
                 </div>
               ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
                 <thead>
                   <tr>
-                    <th align="left">ID</th>
-                    <th align="left">Account</th>
-                    <th align="right">Amount</th>
-                    <th align="left">Date</th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'id', dir: prev?.tab==='Bank' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'account_ref', dir: prev?.tab==='Bank' && prev.column==='account_ref' && prev.dir==='asc' ? 'desc':'asc' }))}>Account</button></th>
+                    <th align="right"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'amount', dir: prev?.tab==='Bank' && prev.column==='amount' && prev.dir==='asc' ? 'desc':'asc' }))}>Amount</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'date', dir: prev?.tab==='Bank' && prev.column==='date' && prev.dir==='asc' ? 'desc':'asc' }))}>Date</button></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {state.bank.length === 0 && <tr><td colSpan={4}>No bank transactions</td></tr>}
-                  {state.bank.map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.id}</td>
-                      <td>{r.account_ref}</td>
-                      <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
-                      <td>{r.date}</td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    const q = searchQuery.toLowerCase().trim()
+                    const rows = (state.bank || []).filter((r: any) => {
+                      if (!q) return true
+                      return String(r.id).toLowerCase().includes(q) || String(r.account_ref).toLowerCase().includes(q)
+                    })
+                    if (sort?.tab === 'Bank') {
+                      rows.sort((a: any, b: any) => {
+                        const dir = sort.dir === 'asc' ? 1 : -1
+                        const col = sort.column
+                        const va = a[col]
+                        const vb = b[col]
+                        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
+                        return String(va).localeCompare(String(vb)) * dir
+                      })
+                    }
+                    if (rows.length === 0) return (<tr><td colSpan={4}>No bank transactions</td></tr>)
+                    return rows.map((r: any, i: number) => (
+                      <tr key={i}>
+                        <td>{r.id}</td>
+                        <td>{r.account_ref}</td>
+                        <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
+                        <td>{r.date}</td>
+                      </tr>
+                    ))
+                  })()}
                 </tbody>
               </table>
               )}
@@ -580,29 +625,46 @@ export function ConsoleView({ api }: { api: Api }) {
                   {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
                 </div>
               ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
                 <thead>
                   <tr>
-                    <th align="left">GL Entry</th>
-                    <th align="left">Bank Txn</th>
-                    <th align="right">Confidence</th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'gl_entry_id', dir: prev?.tab==='Matches' && prev.column==='gl_entry_id' && prev.dir==='asc' ? 'desc':'asc' }))}>GL Entry</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'bank_txn_id', dir: prev?.tab==='Matches' && prev.column==='bank_txn_id' && prev.dir==='asc' ? 'desc':'asc' }))}>Bank Txn</button></th>
+                    <th align="right"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'confidence', dir: prev?.tab==='Matches' && prev.column==='confidence' && prev.dir==='asc' ? 'desc':'asc' }))}>Confidence</button></th>
                     <th align="left">Receipt</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {state.matches.length === 0 && <tr><td colSpan={4}>No matches</td></tr>}
-                  {state.matches.map((r, i) => {
-                    const conf = Number(r.confidence)
-                    const color = conf >= 0.9 ? '#2ecc71' : conf >= 0.7 ? '#f39c12' : '#e74c3c'
-                    return (
-                      <tr key={i}>
-                        <td>{r.gl_entry_id}</td>
-                        <td>{r.bank_txn_id}</td>
-                        <td style={{ textAlign: 'right', color }}>{conf.toFixed(2)}</td>
-                        <td>{r.receipt_id ? <a href={"#/"} onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
-                      </tr>
-                    )
-                  })}
+                  {(() => {
+                    const q = searchQuery.toLowerCase().trim()
+                    const rows = (state.matches || []).filter((r: any) => {
+                      if (!q) return true
+                      return String(r.gl_entry_id).toLowerCase().includes(q) || String(r.bank_txn_id).toLowerCase().includes(q)
+                    })
+                    if (sort?.tab === 'Matches') {
+                      rows.sort((a: any, b: any) => {
+                        const dir = sort.dir === 'asc' ? 1 : -1
+                        const col = sort.column
+                        const va = a[col]
+                        const vb = b[col]
+                        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
+                        return String(va).localeCompare(String(vb)) * dir
+                      })
+                    }
+                    if (rows.length === 0) return (<tr><td colSpan={4}>No matches</td></tr>)
+                    return rows.map((r: any, i: number) => {
+                      const conf = Number(r.confidence)
+                      const color = conf >= 0.9 ? '#2ecc71' : conf >= 0.7 ? '#f39c12' : '#e74c3c'
+                      return (
+                        <tr key={i}>
+                          <td>{r.gl_entry_id}</td>
+                          <td>{r.bank_txn_id}</td>
+                          <td style={{ textAlign: 'right', color }}>{conf.toFixed(2)}</td>
+                          <td>{r.receipt_id ? <a href={"#/"} onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                        </tr>
+                      )
+                    })
+                  })()}
                 </tbody>
               </table>
               )}
