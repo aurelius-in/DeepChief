@@ -743,6 +743,42 @@ export function ConsoleView({ api }: { api: Api }) {
                   ))}
                 </tbody>
               </table>
+              {/* Forecast cone (P50/P75/P90) */}
+              <div style={{ marginTop: 12 }}>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Forecast Cone (P50/P75/P90)</h3>
+                {(() => {
+                  const W = 320, H = 140, pad = 16
+                  // base from last cashSeries balance if available
+                  let base = 150000
+                  try { if (Array.isArray(cashSeries) && cashSeries.length) base = Number((cashSeries[cashSeries.length - 1] as any).balance ?? base) } catch {}
+                  const steps = 10
+                  const p50 = Array.from({ length: steps }, (_, i) => base + i * 800)
+                  const p75 = p50.map((v, i) => v + i * 250)
+                  const p90 = p50.map((v, i) => v + i * 450)
+                  const minV = Math.min(base, ...p50)
+                  const maxV = Math.max(...p90)
+                  const scaleY = (val: number) => {
+                    const r = maxV - minV || 1
+                    return H - pad - ((val - minV) / r) * (H - pad * 2)
+                  }
+                  const scaleX = (i: number) => pad + (i / Math.max(1, steps - 1)) * (W - pad * 2)
+                  const pathArea = (upper: number[], lower: number[]) => {
+                    const up = upper.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' L ')
+                    const lo = lower.slice().reverse().map((v, i) => `${scaleX(steps - 1 - i)},${scaleY(v)}`).join(' L ')
+                    return `M ${up} L ${lo} Z`
+                  }
+                  const d90 = pathArea(p90, p50)
+                  const d75 = pathArea(p75, p50)
+                  const d50 = `M ${p50.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' L ')}`
+                  return (
+                    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                      <path d={d90} fill={'rgba(87,166,255,.15)'} />
+                      <path d={d75} fill={'rgba(46,204,113,.18)'} />
+                      <path d={d50} fill="none" stroke="#57a6ff" strokeWidth={2} />
+                    </svg>
+                  )
+                })()}
+              </div>
             </div>
           )}
           {activeTab === 'Exceptions' && (
