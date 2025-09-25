@@ -1,0 +1,5 @@
+[
+  { "id": "AR-1001", "customer_id": "C-1001", "amount": 2200.00, "currency": "USD", "issue_date": "2025-08-01", "due_date": "2025-08-31", "terms": "Net 30", "status": "open", "paid_date": null, "source_ref": "NS-INV-1001" }
+]
+
+

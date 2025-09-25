@@ -1,0 +1,6 @@
+[
+  { "id": "V-0001", "name": "Acme Corp", "terms": "Net 30", "status": "active" },
+  { "id": "V-0002", "name": "Globex LLC", "terms": "Net 45", "status": "active" }
+]
+
+

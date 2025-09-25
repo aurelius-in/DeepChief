@@ -1,0 +1,9 @@
+[
+  { "account_id": "1000", "name": "Cash", "type": "Asset", "rollup": "Cash & Cash Equivalents" },
+  { "account_id": "1100", "name": "Accounts Receivable", "type": "Asset", "rollup": "Working Capital" },
+  { "account_id": "2000", "name": "Accounts Payable", "type": "Liability", "rollup": "Working Capital" },
+  { "account_id": "4000", "name": "Revenue", "type": "Revenue", "rollup": "Revenue" },
+  { "account_id": "5000", "name": "Cost of Goods Sold", "type": "Expense", "rollup": "COGS" }
+]
+
+

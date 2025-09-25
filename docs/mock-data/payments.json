@@ -1,0 +1,5 @@
+[
+  { "id": "PMT-5001", "method": "ACH", "amount": 1234.56, "currency": "USD", "date": "2025-08-15", "applied_to": ["AP-2001"] }
+]
+
+

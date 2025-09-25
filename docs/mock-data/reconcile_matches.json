@@ -1,0 +1,5 @@
+[
+  { "id": "rm_0001", "gl_entry_id": "gl_2025-08-01_0001", "bank_txn_id": "bnk_2025-08-01_01", "amount_diff": 0.00, "date_diff": 0, "confidence": 1.0, "status": "matched", "receipt_id": "00000000-0000-0000-0000-000000000001", "created_at": "2025-08-01T09:00:00Z" }
+]
+
+

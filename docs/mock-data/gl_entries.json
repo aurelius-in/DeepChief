@@ -1,0 +1,7 @@
+[
+  { "id": "gl_2025-08-01_0001", "entity_id": "E1", "account": "Cash", "amount": -1234.56, "currency": "USD", "date": "2025-08-01", "memo": "ACH Payroll", "source_ref": "NS-TX-001", "dept": "Ops" },
+  { "id": "gl_2025-08-01_0002", "entity_id": "E1", "account": "AR", "amount": 2200.00, "currency": "USD", "date": "2025-08-01", "memo": "Invoice C-1001", "source_ref": "NS-INV-1001", "dept": "Sales" },
+  { "id": "gl_2025-08-02_0001", "entity_id": "E1", "account": "Cash", "amount": 900.25, "currency": "USD", "date": "2025-08-02", "memo": "Stripe Payout", "source_ref": "ST-PO-4242", "dept": "Ops" }
+]
+
+

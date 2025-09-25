@@ -1,0 +1,5 @@
+[
+  { "id": "fc_0001", "period": "2025-09", "params": {"ar_curve_days": [0.5, 0.3, 0.2], "ap_curve_days": [0.6, 0.3, 0.1]}, "outputs": {"cash_buffer_days": 45}, "receipt_id": "00000000-0000-0000-0000-000000000004", "created_at": "2025-09-01T00:00:00Z" }
+]
+
+

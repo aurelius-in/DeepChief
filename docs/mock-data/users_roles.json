@@ -1,0 +1,6 @@
+[
+  { "user_id": "u_controller", "name": "Controller Two", "roles": ["controller"], "department": "Finance" },
+  { "user_id": "u_analyst", "name": "Analyst One", "roles": ["analyst"], "department": "Finance" }
+]
+
+
