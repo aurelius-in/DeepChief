@@ -81,6 +81,10 @@ const api = {
     const r = await fetch('/api/kpi/spend')
     return r.json()
   },
+  async getKpiTreasury() {
+    const r = await fetch('/api/kpi/treasury')
+    return r.json()
+  },
 }
 
 export function App() {

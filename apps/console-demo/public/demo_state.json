@@ -25,6 +25,7 @@
   "kpi": { "auto_match_rate": 62.5, "gl_count": 3, "bank_count": 2, "matched_count": 2 }
   ,
   "kpi_spend": { "issues_total": 2, "duplicates": 1, "saas": 1 },
+  "kpi_treasury": { "projected_buffer_days": 42, "covenant_risk_flags": [{"name": "Leverage", "status": "watch"}] },
   "matches": [
     { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" }
   ],

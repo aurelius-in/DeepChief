@@ -73,6 +73,11 @@ const demoApi = {
     const j = await r.json()
     return j.kpi_spend ?? { issues_total: 0, duplicates: 0, saas: 0 }
   },
+  async getKpiTreasury() {
+    const r = await fetch('./demo_state.json')
+    const j = await r.json()
+    return j.kpi_treasury ?? { projected_buffer_days: 42, covenant_risk_flags: [] }
+  },
 }
 
 export function App() {
