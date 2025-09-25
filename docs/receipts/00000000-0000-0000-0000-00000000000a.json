@@ -1,0 +1,11 @@
+{
+  "id": "00000000-0000-0000-0000-00000000000a",
+  "kind": "control_run",
+  "note": "placeholder for demo",
+  "payload": {
+    "control": "CTRL_JEMateriality",
+    "findings": { "items": [ { "je_id": "gl_1_cash", "amount_abs": 125000, "flag": "materiality_review" } ] }
+  }
+}
+
+

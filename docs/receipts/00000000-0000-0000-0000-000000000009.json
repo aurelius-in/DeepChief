@@ -1,0 +1,11 @@
+{
+  "id": "00000000-0000-0000-0000-000000000009",
+  "kind": "control_run",
+  "note": "placeholder for demo",
+  "payload": {
+    "control": "CTRL_VendorBankChange",
+    "findings": { "items": [ { "bank_txn_id": "bnk_0", "flag": "bank_change_review" } ] }
+  }
+}
+
+

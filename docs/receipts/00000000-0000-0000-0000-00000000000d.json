@@ -1,0 +1,13 @@
+{
+  "id": "00000000-0000-0000-0000-00000000000d",
+  "kind": "exception_case",
+  "note": "placeholder for demo",
+  "payload": {
+    "entity_id": "E1",
+    "type": "control_finding",
+    "status": "open",
+    "assignee": "controller"
+  }
+}
+
+

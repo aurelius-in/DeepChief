@@ -1,5 +1,15 @@
 {
   "id": "00000000-0000-0000-0000-000000000002",
+  "kind": "control_run",
+  "note": "placeholder for demo",
+  "payload": {
+    "control": "CTRL_ApprovalThreshold",
+    "findings": { "items": [ { "je_id": "gl_0_ar", "amount_abs": 35000, "flag": "approval_required" } ] }
+  }
+}
+
+{
+  "id": "00000000-0000-0000-0000-000000000002",
   "type": "control_run",
   "created_at": "2025-09-24T12:00:00Z",
   "hash_b64": "aGFzaF9iNjQ=",
