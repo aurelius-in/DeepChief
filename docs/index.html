@@ -274,6 +274,48 @@
         put('spendBody', j.spend||[], r=>{ const t=String(r.type||''); const isDup=t.toLowerCase().includes('dup'); const isSaas=t.toLowerCase().includes('saas'); const chip= mkChip(r.type, (isDup||isSaas)?'warn':'ok'); return tr(chip, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
         put('polBody', j.policies||[], r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
 
+        // Spend visuals: Pareto and Treemap
+        try {
+          const spendArr = Array.isArray(j.spend) ? j.spend : [];
+          const sums = {};
+          spendArr.forEach(s => { const v = String(s.vendor||'Other'); const amt = Number(s.amount||0); sums[v] = (sums[v]||0)+amt; });
+          const entries = Object.entries(sums).map(([vendor, total])=>({ vendor, total:Number(total) })).sort((a,b)=>b.total-a.total).slice(0,8);
+          const totalAll = entries.reduce((acc, x)=>acc + x.total, 0) || 1;
+          const panelSpend = document.getElementById('panel-spend');
+          const wrap=document.createElement('div'); wrap.style.marginTop='12px'; wrap.style.display='grid'; wrap.style.gridTemplateColumns='repeat(2, minmax(220px,1fr))'; wrap.style.gap='12px'; panelSpend.appendChild(wrap);
+
+          // Pareto bar
+          const paretoW=300, paretoH=140, pad=28, bar=12, gap=8;
+          const svgPareto=document.createElementNS('http://www.w3.org/2000/svg','svg'); svgPareto.setAttribute('width', String(paretoW)); svgPareto.setAttribute('height', String(paretoH)); svgPareto.setAttribute('viewBox', `0 0 ${paretoW} ${paretoH}`);
+          let y=pad;
+          entries.forEach(e=>{
+            const w = Math.max(4, (e.total/totalAll)*(paretoW - pad*2));
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x', String(pad)); rect.setAttribute('y', String(y)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(bar)); rect.setAttribute('fill','#57a6ff');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${e.vendor}: $${e.total.toFixed(2)}`; rect.appendChild(tl);
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(pad)); label.setAttribute('y', String(y-4)); label.setAttribute('fill','#8b99b5'); label.setAttribute('font-size','10'); label.textContent = e.vendor;
+            svgPareto.appendChild(label); svgPareto.appendChild(rect);
+            y += bar + gap;
+          })
+          const h3a=document.createElement('h3'); h3a.style.margin='0 0 6px 0'; h3a.style.fontSize='14px'; h3a.style.color='var(--dc-muted)'; h3a.textContent='Spend Pareto (Top Vendors)';
+          const c1=document.createElement('div'); c1.appendChild(h3a); c1.appendChild(svgPareto); wrap.appendChild(c1);
+
+          // Simple treemap (row layout)
+          const treeW=300, treeH=140, padT=8;
+          const svgTree=document.createElementNS('http://www.w3.org/2000/svg','svg'); svgTree.setAttribute('width', String(treeW)); svgTree.setAttribute('height', String(treeH)); svgTree.setAttribute('viewBox', `0 0 ${treeW} ${treeH}`);
+          let x=padT; const usableW=treeW - padT*2; const usableH=treeH - padT*2; const rowH=usableH;
+          entries.forEach((e,i)=>{
+            const w = Math.max(8, (e.total/totalAll)*usableW);
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x', String(x)); rect.setAttribute('y', String(padT)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(rowH)); rect.setAttribute('fill', i%2===0 ? '#2ecc71' : '#57a6ff');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${e.vendor}: $${e.total.toFixed(2)}`; rect.appendChild(tl);
+            svgTree.appendChild(rect);
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x+4)); label.setAttribute('y', String(padT+12)); label.setAttribute('fill','#0b1321'); label.setAttribute('font-size','10'); label.textContent = e.vendor;
+            svgTree.appendChild(label);
+            x += w + 2;
+          })
+          const h3b=document.createElement('h3'); h3b.style.margin='0 0 6px 0'; h3b.style.fontSize='14px'; h3b.style.color='var(--dc-muted)'; h3b.textContent='Spend Treemap (Simple)';
+          const c2=document.createElement('div'); c2.appendChild(h3b); c2.appendChild(svgTree); wrap.appendChild(c2);
+        } catch {}
+
         // Audit summary
         const audit = j.kpi_audit || {}; const dq = j.kpi_dq || {};
         document.getElementById('auditContent').innerHTML = `
