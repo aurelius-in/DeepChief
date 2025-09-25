@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-0000-0000-000000000005",
+  "kind": "exception_case",
+  "note": "placeholder for demo",
+  "payload": {
+    "entity_id": "E1",
+    "type": "recon_break",
+    "status": "open"
+  }
+}
+
+
