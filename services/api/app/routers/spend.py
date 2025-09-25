@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 import uuid
 from fastapi import APIRouter
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
 from ..core.db import SessionLocal
@@ -34,6 +35,20 @@ def list_spend(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
             }
             for r in rows
         ]
+    finally:
+        sess.close()
+
+
+@router.get("/spend.csv", response_class=PlainTextResponse)
+def export_spend_csv(limit: int = 1000, offset: int = 0) -> str:
+    sess = _session()
+    try:
+        rows = sess.query(SpendIssue).offset(offset).limit(limit).all()
+        lines = ["id,type,vendor,amount,receipt_id"]
+        for r in rows:
+            amt = (f"{float(r.amount):.2f}" if r.amount is not None else "")
+            lines.append(f"{r.id},{r.type},{r.vendor or ''},{amt},{r.receipt_id or ''}")
+        return "\n".join(lines) + "\n"
     finally:
         sess.close()
 

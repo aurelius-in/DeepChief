@@ -148,8 +148,12 @@ export function ConsoleView({ api }: { api: Api }) {
             <a href={`/api/gl_entries.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">GL CSV</a>
             <a href={`/api/bank_txns.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Bank CSV</a>
             <a href={`/api/matches.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Matches CSV</a>
+            <a href={`/api/flux/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer" style={{ display: 'none' }} />
             <a href={`/api/exceptions.csv?limit=${limit}&offset=${offset}${exceptionStatusFilter ? `&status=${encodeURIComponent(exceptionStatusFilter)}` : ''}`} target="_blank" rel="noreferrer">Exceptions CSV</a>
             <a href={`/api/controls/latest.csv?limit=${limit}`} target="_blank" rel="noreferrer">Controls CSV</a>
+            <a href={`/api/flux/flux.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Flux CSV</a>
+            <a href={`/api/forecast/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Forecast CSV</a>
+            <a href={`/api/spend/spend.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Spend CSV</a>
             <span>|</span>
             <span>Page:</span>
             <input type="number" min={1} value={Math.floor(offset / Math.max(1, limit)) + 1}
