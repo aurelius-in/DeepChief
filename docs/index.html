@@ -58,6 +58,7 @@
         <a href="#controls">Controls</a>
         <a href="#spend">Spend</a>
         <a href="#audit">Audit</a>
+        <a href="#architecture">Architecture</a>
       </nav>
       <main>
         <section id="close-to-cash">
@@ -129,6 +130,17 @@
           <h2>Audit</h2>
           <div id="auditContent"></div>
         </section>
+        <section id="architecture">
+          <h2>Architecture</h2>
+          <div style="display:grid; gap:12px">
+            <img src="../dc-big.png" alt="DeepChief Architecture" style="max-width:100%; border:1px solid #1a2a4a; border-radius:8px" />
+            <div class="chips">
+              <span class="chip ok">Governance Spine</span>
+              <span class="chip ok">Close-to-Cash</span>
+              <span class="chip ok">Spend-to-Value</span>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
     <aside id="receiptDrawer" class="drawer" aria-hidden="true">
@@ -177,12 +189,13 @@
 
       function showScreens(key){
         const showIds = new Set();
-        const hideIds = ['close-to-cash','why','hub','audit'];
+        const hideIds = ['close-to-cash','why','hub','audit','architecture'];
         const toolbar = document.querySelector('.toolbar');
         const tabBar = document.getElementById('tabBar');
         if (key === 'controls'){ showIds.add('hub'); setActivePanel('panel-controls'); }
         else if (key === 'spend'){ showIds.add('hub'); setActivePanel('panel-spend'); }
         else if (key === 'audit'){ showIds.add('audit'); }
+        else if (key === 'architecture'){ showIds.add('architecture'); }
         else { // close/default
           showIds.add('close-to-cash'); showIds.add('why'); showIds.add('hub'); setActivePanel('panel-gl');
         }
@@ -207,7 +220,12 @@
         if (raw.includes('controls')) return showScreens('controls');
         if (raw.includes('spend')) return showScreens('spend');
         if (raw.includes('audit')) return showScreens('audit');
+        if (raw.includes('architecture')) return showScreens('architecture');
         return showScreens('close');
+      }
+
+      async function safeLoad(path){
+        try { const r = await fetch(path); if (!r.ok) return null; return await r.json(); } catch { return null }
       }
 
       async function load() {
@@ -356,10 +374,31 @@
         const put = (id, rows, render) => { const tb=document.getElementById(id); rows.forEach((r,i)=>tb.appendChild(render(r,i))); }
         const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.onclick=(e)=>{ e.preventDefault(); openReceipt(c.text) }; td.appendChild(a);} else if (c instanceof HTMLElement) { td.appendChild(c) } else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
 
+        // Try to enrich from docs/mock-data/* if available
+        const gl2 = await safeLoad('./mock-data/gl_entries.json');
+        const bank2 = await safeLoad('./mock-data/bank_txns.json');
+        const m2 = await safeLoad('./mock-data/reconcile_matches.json');
+        const ctrl2 = await safeLoad('./mock-data/control_runs.json');
+        const flux2 = await safeLoad('./mock-data/flux_expl.json');
+        const fc2 = await safeLoad('./mock-data/forecast_snapshots.json');
+        const exc2 = await safeLoad('./mock-data/exceptions.json');
+        const sp2 = await safeLoad('./mock-data/spend_issues.json');
+        const pol2 = await safeLoad('./mock-data/policies.json');
+
+        const GL = Array.isArray(gl2) && gl2.length ? gl2.map(r=>({ id:r.id, entity_id:r.entity_id, account:r.account, amount:r.amount, date:r.date })) : (j.gl||[]);
+        const BANK = Array.isArray(bank2) && bank2.length ? bank2.map(r=>({ id:r.id, account_ref:r.account_ref||r.bank_account_ref, amount:r.amount, date:r.date||r.value_date })) : (j.bank||[]);
+        const MATCH = Array.isArray(m2) && m2.length ? m2.map(r=>({ gl_entry_id:r.gl_entry_id, bank_txn_id:r.bank_txn_id, confidence: r.confidence ?? 1.0, receipt_id:r.receipt_id })) : (j.matches||[]);
+        const CTRL = Array.isArray(ctrl2) && ctrl2.length ? ctrl2.map(r=>({ control_key:r.control_key, window_start:r.window_start, window_end:r.window_end, findings:r.findings, receipt_id:r.receipt_id })) : (j.controls||[]);
+        const FLUX = Array.isArray(flux2) && flux2.length ? flux2.map(r=>({ entity_id:r.entity_id, account:r.account, period:r.period, drivers:r.drivers, receipt_id:r.receipt_id })) : (j.flux||[]);
+        const FC = Array.isArray(fc2) && fc2.length ? fc2.map(r=>({ period:r.period, params:r.params, outputs:r.outputs, receipt_id:r.receipt_id })) : (j.forecast||[]);
+        const EXC = Array.isArray(exc2) && exc2.length ? exc2.map(r=>({ id:r.id, entity_id:r.entity_id, type:r.type, status:r.status, assignee:r.assignee, receipt_id:r.receipt_id })) : (j.exceptions||[]);
+        const SPEND = Array.isArray(sp2) && sp2.length ? sp2.map(r=>({ type:r.type, vendor:r.vendor, amount:r.amount, receipt_id:r.receipt_id })) : (j.spend||[]);
+        const POL = Array.isArray(pol2) && pol2.length ? pol2.map(r=>({ key:r.key, active:r.active, checksum:r.checksum })) : (j.policies||[]);
+
         // Data fill
-        put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
-        put('bankBody', j.bank||[], r=>tr(r.id, r.account_ref, fmt(r.amount), r.date));
-        put('matchBody', j.matches||[], r=>tr(r.gl_entry_id, r.bank_txn_id, fmt(r.confidence), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('glBody', GL, r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
+        put('bankBody', BANK, r=>tr(r.id, r.account_ref, fmt(r.amount), r.date));
+        put('matchBody', MATCH, r=>tr(r.gl_entry_id, r.bank_txn_id, fmt(r.confidence), r.receipt_id? {href:'#', text:r.receipt_id}:''));
         // Reconciliation scatter (index vs confidence)
         try {
           const mx = Array.isArray(j.matches) ? j.matches : [];
@@ -379,12 +418,12 @@
           const holder=document.createElement('div'); holder.appendChild(title); holder.appendChild(scat);
           document.getElementById('panel-matches').appendChild(holder);
         } catch {}
-        put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('excBody', j.exceptions||[], r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
-        put('spendBody', j.spend||[], r=>{ const t=String(r.type||''); const isDup=t.toLowerCase().includes('dup'); const isSaas=t.toLowerCase().includes('saas'); const chip= mkChip(r.type, (isDup||isSaas)?'warn':'ok'); return tr(chip, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
-        put('polBody', j.policies||[], r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
+        put('ctrlBody', CTRL, r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('fluxBody', FLUX, r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('fcBody', FC, r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('excBody', EXC, r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
+        put('spendBody', SPEND, r=>{ const t=String(r.type||''); const isDup=t.toLowerCase().includes('dup'); const isSaas=t.toLowerCase().includes('saas'); const chip= mkChip(r.type, (isDup||isSaas)?'warn':'ok'); return tr(chip, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
+        put('polBody', POL, r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
 
         // Policy impact matrix (synthetic 3x3 grid)
         try {
