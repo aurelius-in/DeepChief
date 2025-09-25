@@ -77,6 +77,33 @@
           </div>
           <pre id="whyJson" style="white-space:pre-wrap; display:none"></pre>
         </section>
+        <section id="invoices" style="display:none">
+          <h2>Billing Invoices</h2>
+          <table>
+            <thead>
+              <tr>
+                <th align="left">Invoice</th>
+                <th align="left">Vendor</th>
+                <th align="right">Amount</th>
+                <th align="left">Status</th>
+              </tr>
+            </thead>
+            <tbody id="invBody"></tbody>
+          </table>
+        </section>
+        <section id="employees" style="display:none">
+          <h2>HRIS Employees</h2>
+          <table>
+            <thead>
+              <tr>
+                <th align="left">ID</th>
+                <th align="left">Name</th>
+                <th align="left">Department</th>
+              </tr>
+            </thead>
+            <tbody id="empBody"></tbody>
+          </table>
+        </section>
         <section id="hub">
           <div class="toolbar">
             <button disabled>Run Ingest</button>
@@ -395,6 +422,33 @@
         const EXC = Array.isArray(exc2) && exc2.length ? exc2.map(r=>({ id:r.id, entity_id:r.entity_id, type:r.type, status:r.status, assignee:r.assignee, receipt_id:r.receipt_id })) : (j.exceptions||[]);
         const SPEND = Array.isArray(sp2) && sp2.length ? sp2.map(r=>({ type:r.type, vendor:r.vendor, amount:r.amount, receipt_id:r.receipt_id })) : (j.spend||[]);
         const POL = Array.isArray(pol2) && pol2.length ? pol2.map(r=>({ key:r.key, active:r.active, checksum:r.checksum })) : (j.policies||[]);
+
+        // Invoices/Employees sections
+        const inv = await safeLoad('./mock-data/apps_billing_invoices.json');
+        const emp = await safeLoad('./mock-data/apps_hris_employees.json');
+        if (Array.isArray(inv) && inv.length){
+          document.getElementById('invoices').style.display = '';
+          const tb = document.getElementById('invBody');
+          inv.forEach((r)=>{
+            const trEl = document.createElement('tr');
+            const td1=document.createElement('td'); td1.textContent = r.invoice_id || ''; trEl.appendChild(td1);
+            const td2=document.createElement('td'); td2.textContent = r.vendor || ''; trEl.appendChild(td2);
+            const td3=document.createElement('td'); td3.style.textAlign='right'; td3.textContent = r.amount!=null? Number(r.amount).toFixed(2):'-'; trEl.appendChild(td3);
+            const td4=document.createElement('td'); td4.textContent = r.status || ''; trEl.appendChild(td4);
+            tb.appendChild(trEl);
+          });
+        }
+        if (Array.isArray(emp) && emp.length){
+          document.getElementById('employees').style.display = '';
+          const tb = document.getElementById('empBody');
+          emp.forEach((r)=>{
+            const trEl = document.createElement('tr');
+            const td1=document.createElement('td'); td1.textContent = r.employee_id || ''; trEl.appendChild(td1);
+            const td2=document.createElement('td'); td2.textContent = r.name || ''; trEl.appendChild(td2);
+            const td3=document.createElement('td'); td3.textContent = r.department || ''; trEl.appendChild(td3);
+            tb.appendChild(trEl);
+          });
+        }
 
         // Data fill
         put('glBody', GL, r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
