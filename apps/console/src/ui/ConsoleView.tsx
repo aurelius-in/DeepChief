@@ -228,6 +228,7 @@ export function ConsoleView({ api }: { api: Api }) {
                         <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1a2a4a" strokeWidth={10} />
                         <circle cx={cx} cy={cy} r={r} fill="none" stroke="#2ecc71" strokeWidth={10} strokeDasharray={`${dash} ${circ - dash}`} transform={`rotate(-90 ${cx} ${cy})`} />
                         <text x={cx} y={cy + 5} textAnchor="middle" fill={colors.text} style={{ fontSize: 14 }}>{pct.toFixed(1)}%</text>
+                        <title>{`Controls pass rate: ${pct.toFixed(1)}%`}</title>
                       </svg>
                     )
                   })()}
@@ -251,7 +252,9 @@ export function ConsoleView({ api }: { api: Api }) {
                           const y = svgH - pad - h
                           return (
                             <g key={t}>
-                              <rect x={x} y={y} width={bw} height={h} fill="#57a6ff" />
+                              <rect x={x} y={y} width={bw} height={h} fill="#57a6ff">
+                                <title>{`${t}: ${v}`}</title>
+                              </rect>
                               <text x={x + bw / 2} y={svgH - 4} textAnchor="middle" fill="#8b99b5" style={{ fontSize: 10 }}>{t}</text>
                             </g>
                           )
@@ -276,7 +279,9 @@ export function ConsoleView({ api }: { api: Api }) {
                           const x = pad
                           const el = (
                             <g key={d.key}>
-                              <rect x={x} y={y - barH / 2} width={w} height={barH} fill={d.value >= 0 ? '#2ecc71' : '#e74c3c'} />
+                              <rect x={x} y={y - barH / 2} width={w} height={barH} fill={d.value >= 0 ? '#2ecc71' : '#e74c3c'}>
+                                <title>{`${d.key}: ${(d.value*100).toFixed(1)}%`}</title>
+                              </rect>
                               <text x={x + w + 4} y={y + 4} fill={colors.text} style={{ fontSize: 11 }}>{d.key}</text>
                             </g>
                           )
