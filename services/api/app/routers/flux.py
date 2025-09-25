@@ -16,10 +16,10 @@ def _session() -> Session:
 
 
 @router.get("")
-def list_flux(limit: int = 100) -> list[dict[str, Any]]:
+def list_flux(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     sess = _session()
     try:
-        rows = sess.query(FluxExpl).limit(limit).all()
+        rows = sess.query(FluxExpl).offset(offset).limit(limit).all()
         return [
             {
                 "id": r.id,

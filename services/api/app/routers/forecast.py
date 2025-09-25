@@ -16,10 +16,10 @@ def _session() -> Session:
 
 
 @router.get("")
-def list_forecast(limit: int = 100) -> list[dict[str, Any]]:
+def list_forecast(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     sess = _session()
     try:
-        rows = sess.query(ForecastSnapshot).limit(limit).all()
+        rows = sess.query(ForecastSnapshot).offset(offset).limit(limit).all()
         return [
             {
                 "id": r.id,

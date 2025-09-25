@@ -16,10 +16,13 @@ def _session() -> Session:
 
 
 @router.get("")
-def list_exceptions(limit: int = 100) -> list[dict[str, Any]]:
+def list_exceptions(limit: int = 100, offset: int = 0, status: str | None = None) -> list[dict[str, Any]]:
     sess = _session()
     try:
-        rows = sess.query(ExceptionCase).limit(limit).all()
+        q = sess.query(ExceptionCase)
+        if status:
+            q = q.filter(ExceptionCase.status == status)
+        rows = q.offset(offset).limit(limit).all()
         return [
             {
                 "id": r.id,
