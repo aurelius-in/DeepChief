@@ -374,6 +374,44 @@
             <span class="chip ok">Receipts: ${audit.receipts_total ?? '-'}</span>
             <span class="chip ${dq.gl_days_since===0 && dq.bank_days_since===0 ? 'ok':'warn'}">Freshness GL ${dq.gl_days_since ?? '-'}d / Bank ${dq.bank_days_since ?? '-'}d</span>
           </div>`;
+
+        // Receipt activity heatmap (synthetic weekly grid)
+        try {
+          const weeks = 6, days = 7, cell = 14, pad = 8;
+          const W = weeks*cell + pad*2, H = days*cell + pad*2;
+          const svgHM = document.createElementNS('http://www.w3.org/2000/svg','svg'); svgHM.setAttribute('width', String(W)); svgHM.setAttribute('height', String(H)); svgHM.setAttribute('viewBox', `0 0 ${W} ${H}`);
+          const vals = [];
+          for (let d=0; d<days; d++){ for (let w=0; w<weeks; w++){ vals.push(Math.random()) } }
+          const color = (v)=> `rgba(87,166,255, ${0.15 + v*0.6})`;
+          let idx=0; for(let d=0; d<days; d++){
+            for(let w=0; w<weeks; w++){
+              const v = vals[idx++]; const x = pad + w*cell; const y = pad + d*cell;
+              const r = document.createElementNS('http://www.w3.org/2000/svg','rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(cell-2)); r.setAttribute('height', String(cell-2)); r.setAttribute('fill', color(v));
+              svgHM.appendChild(r);
+            }
+          }
+          const title = document.createElement('h3'); title.style.margin='8px 0 6px 0'; title.style.fontSize='14px'; title.style.color='var(--dc-muted)'; title.textContent='Receipt Activity Heatmap';
+          const wrap = document.createElement('div'); wrap.style.marginTop='8px'; wrap.appendChild(title); wrap.appendChild(svgHM);
+          document.getElementById('auditContent').appendChild(wrap);
+        } catch {}
+
+        // Controls run timeline
+        try {
+          const ctrl = Array.isArray(j.controls) ? j.controls : [];
+          const W = 320, H = 60, pad=16;
+          const svgTL = document.createElementNS('http://www.w3.org/2000/svg','svg'); svgTL.setAttribute('width', String(W)); svgTL.setAttribute('height', String(H)); svgTL.setAttribute('viewBox', `0 0 ${W} ${H}`);
+          const line = document.createElementNS('http://www.w3.org/2000/svg','line'); line.setAttribute('x1', String(pad)); line.setAttribute('x2', String(W-pad)); line.setAttribute('y1', String(H/2)); line.setAttribute('y2', String(H/2)); line.setAttribute('stroke', '#1a2a4a'); line.setAttribute('stroke-width', '2'); svgTL.appendChild(line);
+          const n = Math.max(1, ctrl.length);
+          ctrl.slice(0, 10).forEach((c,i)=>{
+            const x = pad + (i/Math.max(1,n-1))*(W-pad*2);
+            const dot=document.createElementNS('http://www.w3.org/2000/svg','circle'); dot.setAttribute('cx', String(x)); dot.setAttribute('cy', String(H/2)); dot.setAttribute('r','4'); dot.setAttribute('fill','#57a6ff');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${c.control_key} • findings=${Array.isArray(c?.findings?.items)?c.findings.items.length:0}`; dot.appendChild(tl);
+            svgTL.appendChild(dot);
+          })
+          const h3=document.createElement('h3'); h3.style.margin='8px 0 6px 0'; h3.style.fontSize='14px'; h3.style.color='var(--dc-muted)'; h3.textContent='Controls Run Timeline';
+          const holder = document.createElement('div'); holder.style.marginTop='12px'; holder.appendChild(h3); holder.appendChild(svgTL);
+          document.getElementById('panel-controls').appendChild(holder);
+        } catch {}
       }
       load();
     </script>

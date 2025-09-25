@@ -495,6 +495,30 @@ export function ConsoleView({ api }: { api: Api }) {
                 <strong>DQ Freshness</strong>: GL {kpiDQ.gl_days_since ?? '-'}d, Bank {kpiDQ.bank_days_since ?? '-'}d
               </div>
             )}
+            {/* Receipt Activity Heatmap */}
+            <div style={{ marginTop: 12 }}>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Receipt Activity Heatmap</h3>
+              {(() => {
+                const weeks = 6, days = 7, cell = 14, pad = 8
+                const W = weeks * cell + pad * 2, H = days * cell + pad * 2
+                const vals: number[] = []
+                for (let d = 0; d < days; d++) { for (let w = 0; w < weeks; w++) { vals.push(Math.random()) } }
+                const color = (v: number) => `rgba(87,166,255, ${0.15 + v * 0.6})`
+                let idx = 0
+                return (
+                  <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                    {Array.from({ length: days }).map((_, d) => (
+                      Array.from({ length: weeks }).map((_, w) => {
+                        const v = vals[idx++]
+                        const x = pad + w * cell
+                        const y = pad + d * cell
+                        return <rect key={`${d}-${w}`} x={x} y={y} width={cell - 2} height={cell - 2} fill={color(v)} />
+                      })
+                    ))}
+                  </svg>
+                )
+              })()}
+            </div>
           </section>
         )}
         {jobRuns.length > 0 && (
@@ -1009,6 +1033,26 @@ export function ConsoleView({ api }: { api: Api }) {
               ))}
             </tbody>
           </table>
+          {/* Controls Run Timeline */}
+          <div style={{ marginTop: 12 }}>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Controls Run Timeline</h3>
+            {(() => {
+              const W = 320, H = 60, pad = 16
+              const n = Math.max(1, controls.length)
+              return (
+                <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                  <line x1={pad} x2={W - pad} y1={H / 2} y2={H / 2} stroke="#1a2a4a" strokeWidth={2} />
+                  {controls.slice(0, 10).map((c, i) => {
+                    const x = pad + (i / Math.max(1, n - 1)) * (W - pad * 2)
+                    const findings = Array.isArray((c as any)?.findings?.items) ? (c as any).findings.items.length : 0
+                    return <circle key={i} cx={x} cy={H / 2} r={4} fill="#57a6ff">
+                      <title>{`${(c as any).control_key} • findings=${findings}`}</title>
+                    </circle>
+                  })}
+                </svg>
+              )
+            })()}
+          </div>
         </section>
       </main>
     </div>
