@@ -71,3 +71,32 @@ def pack(ids: str) -> StreamingResponse:
     return StreamingResponse(mem, media_type='application/zip', headers={'Content-Disposition': 'attachment; filename="receipts_pack.zip"'})
 
 
+@router.get("/{receipt_id}/verify")
+def verify_by_id(receipt_id: str) -> Dict[str, Any]:
+    sess = _session()
+    try:
+        rec = sess.get(EvidenceReceipt, receipt_id)
+        if not rec:
+            raise HTTPException(status_code=404, detail="not-found")
+        # download payload and compute hash
+        try:
+            resp = requests.get(rec.payload_url, timeout=10)
+            resp.raise_for_status()
+            payload_bytes = resp.content
+        except requests.RequestException:
+            raise HTTPException(status_code=502, detail="payload-fetch-failed")
+
+        # compute hash and verify signature
+        import hashlib, base64
+        computed_b64 = base64.b64encode(hashlib.sha256(payload_bytes).digest()).decode("ascii")
+        match_hash = (computed_b64 == rec.sha256_b64)
+        valid_sig = verify_signature(
+            payload_hash_b64=rec.sha256_b64,
+            signature_b64=rec.signed_hash_b64,
+            public_key_b64=rec.public_key_b64,
+        )
+        return {"receipt_id": receipt_id, "hash_matches": match_hash, "signature_valid": valid_sig}
+    finally:
+        sess.close()
+
+

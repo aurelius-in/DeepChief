@@ -24,6 +24,10 @@ export type Api = {
   listSpend(): Promise<any[]>
   runDuplicate(): Promise<any>
   runSaas(): Promise<any>
+  getKpiSpend(): Promise<any>
+  getKpiTreasury(): Promise<any>
+  listPolicies(): Promise<any[]>
+  verifyReceiptById(receiptId: string): Promise<{ receipt_id: string, hash_matches: boolean, signature_valid: boolean }>
 }
 
 

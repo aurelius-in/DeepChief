@@ -136,4 +136,12 @@ def exception_triage_run(entity_id: str = "E1") -> dict[str, Any]:
         sess.close()
 
 
+@router.post("/treasury/run")
+def treasury_run() -> dict[str, Any]:
+    # Stub treasury calculation
+    payload = {"agent": "treasury", "outputs": {"projected_buffer_days": 42, "covenant_risk_flags": [{"name": "Leverage", "status": "watch"}]}}
+    header = create_receipt(payload, kind="treasury_kpi", links={})
+    return {"receipt_id": header["id"], "outputs": payload["outputs"]}
+
+
 

@@ -22,6 +22,9 @@ export function ConsoleView({ api }: { api: Api }) {
   const [forecast, setForecast] = useState<any[]>([])
   const [exceptions, setExceptions] = useState<any[]>([])
   const [spend, setSpend] = useState<any[]>([])
+  const [kpiSpend, setKpiSpend] = useState<any>(null)
+  const [kpiTreasury, setKpiTreasury] = useState<any>(null)
+  const [packIds, setPackIds] = useState<string>("")
 
   useEffect(() => {
     ;(async () => {
@@ -38,6 +41,8 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setForecast(await api.listForecast()) } catch {}
       try { setExceptions(await api.listExceptions()) } catch {}
       try { setSpend(await api.listSpend()) } catch {}
+      try { setKpiSpend(await api.getKpiSpend()) } catch {}
+      try { setKpiTreasury(await api.getKpiTreasury()) } catch {}
     })()
   }, [api])
 
@@ -53,11 +58,16 @@ export function ConsoleView({ api }: { api: Api }) {
         {kpi && (
           <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <h2 style={{ marginTop: 0 }}>KPIs</h2>
-            <div style={{ display: 'flex', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <div>Auto Match Rate: {kpi.auto_match_rate}%</div>
               <div>GL: {kpi.gl_count}</div>
               <div>Bank: {kpi.bank_count}</div>
               <div>Matched: {kpi.matched_count}</div>
+              <div>| Spend Issues: {kpiSpend?.issues_total ?? '-'}</div>
+              <div>Duplicates: {kpiSpend?.duplicates ?? '-'}</div>
+              <div>SaaS: {kpiSpend?.saas ?? '-'}</div>
+              <div>| Buffer Days: {kpiTreasury?.projected_buffer_days ?? '-'}</div>
+              <div>Flags: {Array.isArray(kpiTreasury?.covenant_risk_flags) ? kpiTreasury.covenant_risk_flags.map((f: any) => `${f.name}:${f.status}`).join(', ') : '-'}</div>
             </div>
           </section>
         )}
@@ -79,7 +89,7 @@ export function ConsoleView({ api }: { api: Api }) {
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Actions</h2>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
             <button onClick={async () => { await api.runReconciler(); location.reload() }}>Run Reconciler</button>
             <button onClick={async () => { await api.runControls(); location.reload() }}>Run Controls</button>
@@ -88,6 +98,9 @@ export function ConsoleView({ api }: { api: Api }) {
             <button onClick={async () => { await api.runExceptionTriage(); location.reload() }}>Run Exception Triage</button>
             <button onClick={async () => { await api.runDuplicate(); location.reload() }}>Run Duplicate Sentinel</button>
             <button onClick={async () => { await api.runSaas(); location.reload() }}>Run SaaS Optimizer</button>
+            <span>|</span>
+            <input placeholder="receipt ids (comma-separated)" value={packIds} onChange={e => setPackIds(e.target.value)} style={{ minWidth: 260 }} />
+            <button onClick={() => { if (packIds.trim()) window.open(`/api/receipts/pack?ids=${encodeURIComponent(packIds.trim())}`, '_blank') }}>Download Receipts Pack</button>
           </div>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>

@@ -49,3 +49,15 @@ def kpi_spend() -> dict[str, Any]:
         sess.close()
 
 
+@router.get("/treasury")
+def kpi_treasury() -> dict[str, Any]:
+    # Stubbed KPI: use forecast snapshot outputs if present later
+    return {
+        "projected_buffer_days": 42,
+        "covenant_risk_flags": [
+            {"name": "DSCR", "status": "ok"},
+            {"name": "Leverage", "status": "watch"},
+        ],
+    }
+
+

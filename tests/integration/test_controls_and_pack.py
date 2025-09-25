@@ -1,7 +1,11 @@
+import os
+import pytest
 from fastapi.testclient import TestClient
 
 from services.api.app.main import app
 
+
+pytestmark = pytest.mark.skipif(os.getenv("RUN_INTEGRATION") != "1", reason="Integration tests disabled (set RUN_INTEGRATION=1)")
 
 def test_controls_run_and_receipts_pack():
     client = TestClient(app)

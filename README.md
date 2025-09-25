@@ -70,6 +70,10 @@ Run flow (Console)
 - View Matches and KPIs
 - Verify receipts with payload/signature/public key
 
+Flux and Forecast
+- Click Run Flux, then Run Forecast
+- View Flux explanations and Forecast outputs with receipt links
+
 Spend flow
 - Click Run Duplicate Sentinel and Run SaaS Optimizer
 - View Spend table for detected issues and open receipts

@@ -77,6 +77,22 @@ const api = {
     const r = await fetch('/api/spend/saas/run', { method: 'POST' })
     return r.json()
   },
+  async getKpiSpend() {
+    const r = await fetch('/api/kpi/spend')
+    return r.json()
+  },
+  async getKpiTreasury() {
+    const r = await fetch('/api/kpi/treasury')
+    return r.json()
+  },
+  async listPolicies() {
+    const r = await fetch('/api/policies')
+    return r.json()
+  },
+  async verifyReceiptById(receiptId: string) {
+    const r = await fetch(`/api/receipts/${encodeURIComponent(receiptId)}/verify`)
+    return r.json()
+  },
 }
 
 export function App() {
