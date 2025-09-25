@@ -12,6 +12,7 @@ from .routers import flux as flux_router
 from .routers import forecast as forecast_router
 from .routers import exceptions as exceptions_router
 from .routers import spend as spend_router
+from .routers import policies as policies_router
 
 
 def create_app() -> FastAPI:
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
     application.include_router(forecast_router.router)
     application.include_router(exceptions_router.router)
     application.include_router(spend_router.router)
+    application.include_router(policies_router.router)
 
     return application
 
