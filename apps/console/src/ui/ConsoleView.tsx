@@ -49,10 +49,10 @@ export function ConsoleView({ api }: { api: Api }) {
       setState({ why, gl, bank, matches })
       try { setKpi(await api.getKpiCloseToCash()) } catch {}
       try { setControls(await api.listControlsLatest()) } catch {}
-      try { setFlux(await api.listFlux()) } catch {}
-      try { setForecast(await api.listForecast()) } catch {}
-      try { setExceptions(await api.listExceptions()) } catch {}
-      try { setSpend(await api.listSpend()) } catch {}
+      try { setFlux(await api.listFlux(limit, offset)) } catch {}
+      try { setForecast(await api.listForecast(limit, offset)) } catch {}
+      try { setExceptions(await api.listExceptions(limit, offset, exceptionStatusFilter || undefined)) } catch {}
+      try { setSpend(await api.listSpend(limit, offset)) } catch {}
       try { setKpiSpend(await api.getKpiSpend()) } catch {}
       try { setKpiTreasury(await api.getKpiTreasury()) } catch {}
       try { setPolicies(await api.listPolicies()) } catch {}
@@ -62,7 +62,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { const f = await api.getFeatures(); setFeatures(f.flags || f) } catch {}
       try { setJobRuns(await api.listJobRuns(20, 0)) } catch {}
     })()
-  }, [api, limit, offset])
+  }, [api, limit, offset, exceptionStatusFilter])
 
   const sample = useMemo(() => state.why, [state])
 
