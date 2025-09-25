@@ -40,6 +40,10 @@ export function ConsoleView({ api }: { api: Api }) {
   const [invoices, setInvoices] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<string>('GL')
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+  const [drawerId, setDrawerId] = useState<string>("")
+  const [drawerJson, setDrawerJson] = useState<any>(null)
+  const [showWhyJson, setShowWhyJson] = useState<boolean>(false)
 
   useEffect(() => {
     ;(async () => {
@@ -137,6 +141,28 @@ export function ConsoleView({ api }: { api: Api }) {
     { id: 'Matches', label: 'Matches' },
   ], [])
 
+  const openReceipt = async (id: string) => {
+    try {
+      setDrawerOpen(true)
+      setDrawerId(id)
+      setDrawerJson(null)
+      // Try to fetch receipt header/payload if available
+      const res = await fetch(`/api/receipts/${encodeURIComponent(id)}`)
+      if (res.ok) {
+        const j = await res.json()
+        setDrawerJson(j)
+        return
+      }
+    } catch {}
+    // Fallback to verify-only response
+    try {
+      const v = await api.verifyReceiptById(id)
+      setDrawerJson(v)
+    } catch {
+      setDrawerJson({ id, error: 'unable to load' })
+    }
+  }
+
   return (
     <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text }}>
       <header style={{ padding: 16, borderBottom: `1px solid ${colors.panel}`, display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, background: colors.bg, zIndex: 2 }}>
@@ -179,8 +205,18 @@ export function ConsoleView({ api }: { api: Api }) {
             </section>
           )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Why Card</h2>
-          <JsonView data={whyCard} style={darkStyles} />
+          <h2 style={{ marginTop: 0 }}>Why</h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+            {whyCard?.policy && (<span style={{ borderRadius: 999, padding: '2px 8px', background: 'rgba(46,204,113,.15)', color: '#2ecc71', fontSize: 12 }}>{whyCard.policy}</span>)}
+            {whyCard?.result?.flag && (<span style={{ borderRadius: 999, padding: '2px 8px', background: 'rgba(243,156,18,.15)', color: '#f39c12', fontSize: 12 }}>{whyCard.result.flag}</span>)}
+            {whyCard?.receipt?.id && (
+              <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(whyCard.receipt.id) }} style={{ fontSize: 12 }}>
+                {whyCard.receipt.id}
+              </a>
+            )}
+            <button onClick={() => setShowWhyJson(v => !v)} style={{ marginLeft: 'auto' }}>{showWhyJson ? 'Hide' : 'Expand'}</button>
+          </div>
+          {showWhyJson && <JsonView data={whyCard} style={darkStyles} />}
         </section>
         {invoices.length > 0 && (
           <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
@@ -374,7 +410,7 @@ export function ConsoleView({ api }: { api: Api }) {
                     <td>{r.id}</td>
                     <td>{r.agent}</td>
                     <td>{r.status}</td>
-                    <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                    <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -493,7 +529,7 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.type}</td>
                   <td>{r.status}</td>
                   <td>{r.assignee || '-'}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -518,7 +554,7 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.account}</td>
                   <td>{r.period}</td>
                   <td>{JSON.stringify(r.drivers)}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -541,7 +577,7 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.period}</td>
                   <td>{JSON.stringify(r.params)}</td>
                   <td>{JSON.stringify(r.outputs)}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -587,12 +623,21 @@ export function ConsoleView({ api }: { api: Api }) {
                   <td>{r.gl_entry_id}</td>
                   <td>{r.bank_txn_id}</td>
                   <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                  <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </section>
+        {drawerOpen && (
+          <aside style={{ position: 'fixed', top: 0, right: 0, width: 420, maxWidth: '90vw', height: '100vh', background: '#0f1830', borderLeft: '1px solid #1a2a4a', boxShadow: '-12px 0 24px rgba(0,0,0,.3)', zIndex: 3, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: 12, borderBottom: '1px solid #1a2a4a' }}>
+              <strong style={{ marginRight: 'auto' }}>Receipt {drawerId}</strong>
+              <button onClick={() => setDrawerOpen(false)}>Close</button>
+            </div>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: '12px 16px' }}>{drawerJson ? JSON.stringify(drawerJson, null, 2) : 'Loading...'}</pre>
+          </aside>
+        )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>Controls</h2>
           <div style={{ marginBottom: 8 }}>
