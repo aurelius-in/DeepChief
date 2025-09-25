@@ -97,6 +97,10 @@
             <h2>Matches</h2>
             <table><thead><tr><th align="left">GL Entry</th><th align="left">Bank Txn</th><th align="right">Confidence</th><th align="left">Receipt</th></tr></thead><tbody id="matchBody"></tbody></table>
           </div>
+          <div class="tab-panel" id="panel-controls">
+            <h2>Controls</h2>
+            <table><thead><tr><th align="left">Control</th><th align="left">Window</th><th align="left">Findings</th><th align="left">Receipt</th></tr></thead><tbody id="ctrlBody"></tbody></table>
+          </div>
           <div class="tab-panel" id="panel-flux">
             <h2>Flux</h2>
             <table><thead><tr><th align="left">Entity</th><th align="left">Account</th><th align="left">Period</th><th align="left">Drivers</th><th align="left">Receipt</th></tr></thead><tbody id="fluxBody"></tbody></table>
@@ -179,6 +183,60 @@
         const ap = areaPath(cash.length? cash : [152000,150200,149400,150900,149100,151000,150500,148800,149300,150100,151400,150700,152200,153000], W, H);
         const aPath=document.createElementNS('http://www.w3.org/2000/svg','path'); aPath.setAttribute('d', ap); aPath.setAttribute('fill','rgba(87,166,255,.15)'); aPath.setAttribute('stroke','#57a6ff'); aPath.setAttribute('stroke-width','2'); svg.appendChild(aPath);
 
+        // Controls donut
+        try {
+          const donut = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          donut.setAttribute('width','160'); donut.setAttribute('height','120'); donut.setAttribute('viewBox','0 0 120 120');
+          const pctNum = typeof k.controls_pass_rate === 'number' ? k.controls_pass_rate : (j.kpi?.controls_pass_rate || 0);
+          const pct = Math.max(0, Math.min(100, pctNum));
+          const cx=60, cy=60, r=36, c=2*Math.PI*r, dash=(pct/100)*c;
+          const bg=document.createElementNS('http://www.w3.org/2000/svg','circle'); bg.setAttribute('cx',cx); bg.setAttribute('cy',cy); bg.setAttribute('r',r); bg.setAttribute('fill','none'); bg.setAttribute('stroke','#1a2a4a'); bg.setAttribute('stroke-width','10');
+          const fg=document.createElementNS('http://www.w3.org/2000/svg','circle'); fg.setAttribute('cx',cx); fg.setAttribute('cy',cy); fg.setAttribute('r',r); fg.setAttribute('fill','none'); fg.setAttribute('stroke','#2ecc71'); fg.setAttribute('stroke-width','10'); fg.setAttribute('stroke-dasharray', `${dash} ${c-dash}`); fg.setAttribute('transform',`rotate(-90 ${cx} ${cy})`);
+          const txt=document.createElementNS('http://www.w3.org/2000/svg','text'); txt.setAttribute('x', String(cx)); txt.setAttribute('y', String(cy+5)); txt.setAttribute('text-anchor','middle'); txt.setAttribute('fill','#e6edf6'); txt.textContent = `${pct.toFixed(1)}%`;
+          const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `Controls pass rate: ${pct.toFixed(1)}%`;
+          document.getElementById('panel-controls').appendChild(donut); donut.appendChild(bg); donut.appendChild(fg); donut.appendChild(txt); donut.appendChild(tl);
+        } catch {}
+
+        // Exceptions histogram
+        try {
+          const ex = Array.isArray(j.exceptions) ? j.exceptions : [];
+          const counts = {};
+          ex.forEach(e => { const t = String(e.type||'other'); counts[t] = (counts[t]||0)+1 });
+          const types = Object.keys(counts).slice(0,6);
+          const maxV = Math.max(1, ...types.map(t=>counts[t]));
+          const svgH = 120, svgW = 260, pad=20, bw = Math.max(12, (svgW - pad*2)/(types.length||1) - 8);
+          const hist=document.createElementNS('http://www.w3.org/2000/svg','svg'); hist.setAttribute('width','260'); hist.setAttribute('height','120'); hist.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+          types.forEach((t,i)=>{
+            const v = counts[t];
+            const h = ((v/maxV) * (svgH - pad*2));
+            const x = pad + i*(bw+8);
+            const y = svgH - pad - h;
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',bw); rect.setAttribute('height',h); rect.setAttribute('fill','#57a6ff');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${t}: ${v}`; rect.appendChild(tl);
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x + bw/2)); label.setAttribute('y', String(svgH - 4)); label.setAttribute('text-anchor','middle'); label.setAttribute('fill','#8b99b5'); label.setAttribute('font-size','10'); label.textContent = t;
+            hist.appendChild(rect); hist.appendChild(label);
+          })
+          document.getElementById('panel-exceptions').appendChild(hist)
+        } catch {}
+
+        // Flux waterfall
+        try {
+          const fx = Array.isArray(j.flux) && j.flux[0] ? j.flux[0] : null;
+          const drivers = fx?.drivers || { volume: 0.6, price: 0.3, fx: 0.1 };
+          const vals = Object.entries(drivers).map(([k,v])=>({ key:k, value:Number(v) }));
+          const svgW=260, svgH=120, pad=12, barH=12, gap=10; let x=pad, y=svgH/2;
+          const wf=document.createElementNS('http://www.w3.org/2000/svg','svg'); wf.setAttribute('width','260'); wf.setAttribute('height','120'); wf.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+          vals.forEach(d=>{
+            const w = Math.max(10, Math.abs(d.value)* (svgW - pad*2 - 40));
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x', x); rect.setAttribute('y', String(y - barH/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(barH)); rect.setAttribute('fill', d.value>=0 ? '#2ecc71' : '#e74c3c');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${d.key}: ${(d.value*100).toFixed(1)}%`; rect.appendChild(tl);
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x + w + 4)); label.setAttribute('y', String(y + 4)); label.setAttribute('fill','#e6edf6'); label.setAttribute('font-size','11'); label.textContent = d.key;
+            wf.appendChild(rect); wf.appendChild(label);
+            y += barH + gap;
+          })
+          document.getElementById('panel-flux').appendChild(wf)
+        } catch {}
+
         // Why chips + drawer
         const why = j.whyCard || { kpi_snapshot: k };
         const chips = document.getElementById('whyChips');
@@ -193,6 +251,7 @@
           { label:'GL', panelId:'panel-gl' },
           { label:'Bank', panelId:'panel-bank' },
           { label:'Matches', panelId:'panel-matches' },
+          { label:'Controls', panelId:'panel-controls' },
           { label:'Flux', panelId:'panel-flux' },
           { label:'Forecast', panelId:'panel-forecast' },
           { label:'Exceptions', panelId:'panel-exceptions' },
@@ -202,7 +261,7 @@
 
         // Helpers
         const put = (id, rows, render) => { const tb=document.getElementById(id); rows.forEach((r,i)=>tb.appendChild(render(r,i))); }
-        const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.onclick=(e)=>{ e.preventDefault(); openReceipt(c.text) }; td.appendChild(a);} else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
+        const tr = (...cells)=>{ const tr=document.createElement('tr'); cells.forEach(c=>{ const td=document.createElement('td'); if (c && c.href){ const a=document.createElement('a'); a.href=c.href; a.textContent=c.text; a.onclick=(e)=>{ e.preventDefault(); openReceipt(c.text) }; td.appendChild(a);} else if (c instanceof HTMLElement) { td.appendChild(c) } else { td.textContent = c??'-'; } tr.appendChild(td); }); return tr; }
 
         // Data fill
         put('glBody', j.gl||[], r=>tr(r.id, r.entity_id, r.account, fmt(r.amount), r.date));
@@ -211,9 +270,51 @@
         put('ctrlBody', j.controls||[], r=>tr(r.control_key, (r.window_start||'')+' → '+(r.window_end||''), Array.isArray(r.findings?.items)? r.findings.items.length:0, r.receipt_id? {href:'#', text:r.receipt_id}:''));
         put('fluxBody', j.flux||[], r=>tr(r.entity_id, r.account, r.period, JSON.stringify(r.drivers), r.receipt_id? {href:'#', text:r.receipt_id}:''));
         put('fcBody', j.forecast||[], r=>tr(r.period, JSON.stringify(r.params), JSON.stringify(r.outputs), r.receipt_id? {href:'#', text:r.receipt_id}:''));
-        put('excBody', j.exceptions||[], r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip.textContent, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
-        put('spendBody', j.spend||[], r=>tr(r.type, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:''));
+        put('excBody', j.exceptions||[], r=>{ const chip = r.status==='open'? mkChip('open','warn') : mkChip('closed','ok'); return tr(r.id, r.type, chip, r.assignee||'', r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
+        put('spendBody', j.spend||[], r=>{ const t=String(r.type||''); const isDup=t.toLowerCase().includes('dup'); const isSaas=t.toLowerCase().includes('saas'); const chip= mkChip(r.type, (isDup||isSaas)?'warn':'ok'); return tr(chip, r.vendor||'', fmt(r.amount), r.receipt_id? {href:'#', text:r.receipt_id}:'' ) });
         put('polBody', j.policies||[], r=>tr(r.key, String(r.active), (r.checksum||'').slice(0,10)+'...'));
+
+        // Spend visuals: Pareto and Treemap
+        try {
+          const spendArr = Array.isArray(j.spend) ? j.spend : [];
+          const sums = {};
+          spendArr.forEach(s => { const v = String(s.vendor||'Other'); const amt = Number(s.amount||0); sums[v] = (sums[v]||0)+amt; });
+          const entries = Object.entries(sums).map(([vendor, total])=>({ vendor, total:Number(total) })).sort((a,b)=>b.total-a.total).slice(0,8);
+          const totalAll = entries.reduce((acc, x)=>acc + x.total, 0) || 1;
+          const panelSpend = document.getElementById('panel-spend');
+          const wrap=document.createElement('div'); wrap.style.marginTop='12px'; wrap.style.display='grid'; wrap.style.gridTemplateColumns='repeat(2, minmax(220px,1fr))'; wrap.style.gap='12px'; panelSpend.appendChild(wrap);
+
+          // Pareto bar
+          const paretoW=300, paretoH=140, pad=28, bar=12, gap=8;
+          const svgPareto=document.createElementNS('http://www.w3.org/2000/svg','svg'); svgPareto.setAttribute('width', String(paretoW)); svgPareto.setAttribute('height', String(paretoH)); svgPareto.setAttribute('viewBox', `0 0 ${paretoW} ${paretoH}`);
+          let y=pad;
+          entries.forEach(e=>{
+            const w = Math.max(4, (e.total/totalAll)*(paretoW - pad*2));
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x', String(pad)); rect.setAttribute('y', String(y)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(bar)); rect.setAttribute('fill','#57a6ff');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${e.vendor}: $${e.total.toFixed(2)}`; rect.appendChild(tl);
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(pad)); label.setAttribute('y', String(y-4)); label.setAttribute('fill','#8b99b5'); label.setAttribute('font-size','10'); label.textContent = e.vendor;
+            svgPareto.appendChild(label); svgPareto.appendChild(rect);
+            y += bar + gap;
+          })
+          const h3a=document.createElement('h3'); h3a.style.margin='0 0 6px 0'; h3a.style.fontSize='14px'; h3a.style.color='var(--dc-muted)'; h3a.textContent='Spend Pareto (Top Vendors)';
+          const c1=document.createElement('div'); c1.appendChild(h3a); c1.appendChild(svgPareto); wrap.appendChild(c1);
+
+          // Simple treemap (row layout)
+          const treeW=300, treeH=140, padT=8;
+          const svgTree=document.createElementNS('http://www.w3.org/2000/svg','svg'); svgTree.setAttribute('width', String(treeW)); svgTree.setAttribute('height', String(treeH)); svgTree.setAttribute('viewBox', `0 0 ${treeW} ${treeH}`);
+          let x=padT; const usableW=treeW - padT*2; const usableH=treeH - padT*2; const rowH=usableH;
+          entries.forEach((e,i)=>{
+            const w = Math.max(8, (e.total/totalAll)*usableW);
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x', String(x)); rect.setAttribute('y', String(padT)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(rowH)); rect.setAttribute('fill', i%2===0 ? '#2ecc71' : '#57a6ff');
+            const tl=document.createElementNS('http://www.w3.org/2000/svg','title'); tl.textContent = `${e.vendor}: $${e.total.toFixed(2)}`; rect.appendChild(tl);
+            svgTree.appendChild(rect);
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x+4)); label.setAttribute('y', String(padT+12)); label.setAttribute('fill','#0b1321'); label.setAttribute('font-size','10'); label.textContent = e.vendor;
+            svgTree.appendChild(label);
+            x += w + 2;
+          })
+          const h3b=document.createElement('h3'); h3b.style.margin='0 0 6px 0'; h3b.style.fontSize='14px'; h3b.style.color='var(--dc-muted)'; h3b.textContent='Spend Treemap (Simple)';
+          const c2=document.createElement('div'); c2.appendChild(h3b); c2.appendChild(svgTree); wrap.appendChild(c2);
+        } catch {}
 
         // Audit summary
         const audit = j.kpi_audit || {}; const dq = j.kpi_dq || {};

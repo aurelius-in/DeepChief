@@ -12,6 +12,9 @@ venv/
 # Node
 apps/console/node_modules/
 apps/console/dist/
+apps/console-demo/node_modules/
+apps/console-demo/dist/
+node_modules/
 
 # OS
 .DS_Store

@@ -40,6 +40,15 @@ export function ConsoleView({ api }: { api: Api }) {
   const [invoices, setInvoices] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<string>('GL')
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+  const [drawerId, setDrawerId] = useState<string>("")
+  const [drawerJson, setDrawerJson] = useState<any>(null)
+  const [showWhyJson, setShowWhyJson] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [tableDensity, setTableDensity] = useState<'comfortable' | 'compact'>('comfortable')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sort, setSort] = useState<{ tab: string, column: string, dir: 'asc' | 'desc' } | null>(null)
+  const [pinnedFirstColumn, setPinnedFirstColumn] = useState<boolean>(false)
 
   useEffect(() => {
     ;(async () => {
@@ -135,7 +144,34 @@ export function ConsoleView({ api }: { api: Api }) {
     { id: 'GL', label: 'GL' },
     { id: 'Bank', label: 'Bank' },
     { id: 'Matches', label: 'Matches' },
+    { id: 'Flux', label: 'Flux' },
+    { id: 'Forecast', label: 'Forecast' },
+    { id: 'Exceptions', label: 'Exceptions' },
+    { id: 'Spend', label: 'Spend' },
+    { id: 'Policies', label: 'Policies' },
   ], [])
+
+  const openReceipt = async (id: string) => {
+    try {
+      setDrawerOpen(true)
+      setDrawerId(id)
+      setDrawerJson(null)
+      // Try to fetch receipt header/payload if available
+      const res = await fetch(`/api/receipts/${encodeURIComponent(id)}`)
+      if (res.ok) {
+        const j = await res.json()
+        setDrawerJson(j)
+        return
+      }
+    } catch {}
+    // Fallback to verify-only response
+    try {
+      const v = await api.verifyReceiptById(id)
+      setDrawerJson(v)
+    } catch {
+      setDrawerJson({ id, error: 'unable to load' })
+    }
+  }
 
   return (
     <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text }}>
@@ -176,11 +212,102 @@ export function ConsoleView({ api }: { api: Api }) {
                   <path d={areaPath((cashSeries || []).map((x: any) => Number(x.balance ?? 0)), 800, 140)} fill="rgba(87,166,255,.15)" stroke="#57a6ff" strokeWidth={2} />
                 </svg>
               </div>
+              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px,1fr))', gap: 12, alignItems: 'center' }}>
+                {/* Controls pass donut */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Controls Pass</h3>
+                  {(() => {
+                    const pct = typeof kpi?.controls_pass_rate === 'number' ? Math.max(0, Math.min(100, kpi.controls_pass_rate)) : 0
+                    const r = 36
+                    const cx = 60
+                    const cy = 60
+                    const circ = 2 * Math.PI * r
+                    const dash = (pct / 100) * circ
+                    return (
+                      <svg width={160} height={120} viewBox="0 0 120 120">
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1a2a4a" strokeWidth={10} />
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#2ecc71" strokeWidth={10} strokeDasharray={`${dash} ${circ - dash}`} transform={`rotate(-90 ${cx} ${cy})`} />
+                        <text x={cx} y={cy + 5} textAnchor="middle" fill={colors.text} style={{ fontSize: 14 }}>{pct.toFixed(1)}%</text>
+                        <title>{`Controls pass rate: ${pct.toFixed(1)}%`}</title>
+                      </svg>
+                    )
+                  })()}
+                </section>
+                {/* Exceptions histogram */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Exceptions by Type</h3>
+                  {(() => {
+                    const counts: Record<string, number> = {}
+                    ;(exceptions || []).forEach((e: any) => { const t = String(e?.type || 'other'); counts[t] = (counts[t] || 0) + 1 })
+                    const types = Object.keys(counts).slice(0, 6)
+                    const maxV = Math.max(1, ...types.map(t => counts[t]))
+                    const svgW = 260, svgH = 120, pad = 20
+                    const bw = Math.max(12, (svgW - pad * 2) / Math.max(1, types.length) - 8)
+                    return (
+                      <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+                        {types.map((t, i) => {
+                          const v = counts[t]
+                          const h = (v / maxV) * (svgH - pad * 2)
+                          const x = pad + i * (bw + 8)
+                          const y = svgH - pad - h
+                          return (
+                            <g key={t}>
+                              <rect x={x} y={y} width={bw} height={h} fill="#57a6ff">
+                                <title>{`${t}: ${v}`}</title>
+                              </rect>
+                              <text x={x + bw / 2} y={svgH - 4} textAnchor="middle" fill="#8b99b5" style={{ fontSize: 10 }}>{t}</text>
+                            </g>
+                          )
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+                {/* Flux waterfall */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Flux Waterfall</h3>
+                  {(() => {
+                    const f = Array.isArray(flux) && flux[0] ? flux[0] : null
+                    const drivers: Record<string, number> = (f?.drivers as any) || { volume: 0.6, price: 0.3, fx: 0.1 }
+                    const rows = Object.entries(drivers).map(([k, v]) => ({ key: k, value: Number(v) }))
+                    const svgW = 260, svgH = 120, pad = 12, barH = 12, gap = 10
+                    let y = svgH / 2
+                    return (
+                      <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+                        {rows.map((d, i) => {
+                          const w = Math.max(10, Math.abs(d.value) * (svgW - pad * 2 - 40))
+                          const x = pad
+                          const el = (
+                            <g key={d.key}>
+                              <rect x={x} y={y - barH / 2} width={w} height={barH} fill={d.value >= 0 ? '#2ecc71' : '#e74c3c'}>
+                                <title>{`${d.key}: ${(d.value*100).toFixed(1)}%`}</title>
+                              </rect>
+                              <text x={x + w + 4} y={y + 4} fill={colors.text} style={{ fontSize: 11 }}>{d.key}</text>
+                            </g>
+                          )
+                          y += barH + gap
+                          return el
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+              </div>
             </section>
           )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Why Card</h2>
-          <JsonView data={whyCard} style={darkStyles} />
+          <h2 style={{ marginTop: 0 }}>Why</h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+            {whyCard?.policy && (<span style={{ borderRadius: 999, padding: '2px 8px', background: 'rgba(46,204,113,.15)', color: '#2ecc71', fontSize: 12 }}>{whyCard.policy}</span>)}
+            {whyCard?.result?.flag && (<span style={{ borderRadius: 999, padding: '2px 8px', background: 'rgba(243,156,18,.15)', color: '#f39c12', fontSize: 12 }}>{whyCard.result.flag}</span>)}
+            {whyCard?.receipt?.id && (
+              <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(whyCard.receipt.id) }} style={{ fontSize: 12 }}>
+                {whyCard.receipt.id}
+              </a>
+            )}
+            <button onClick={() => setShowWhyJson(v => !v)} style={{ marginLeft: 'auto' }}>{showWhyJson ? 'Hide' : 'Expand'}</button>
+          </div>
+          {showWhyJson && <JsonView data={whyCard} style={darkStyles} />}
         </section>
         {invoices.length > 0 && (
           <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
@@ -246,7 +373,7 @@ export function ConsoleView({ api }: { api: Api }) {
             </div>
           </section>
         )}
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16, position: 'sticky', top: 72, zIndex: 1 }}>
           <h2 style={{ marginTop: 0 }}>Receipt Verify</h2>
           <form onSubmit={async (e) => { e.preventDefault(); const res = await api.verifyReceipt(verifyForm); setVerifyResult(res.valid ? 'Valid' : 'Invalid') }}>
             <div style={{ display: 'grid', gap: 8 }}>
@@ -262,7 +389,7 @@ export function ConsoleView({ api }: { api: Api }) {
             <button onClick={async () => { if (!verifyId.trim()) return; const res = await api.verifyReceiptById(verifyId.trim()); alert(`hash_matches=${res.hash_matches}, signature_valid=${res.signature_valid}`) }}>Verify by ID</button>
           </div>
         </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16, position: 'sticky', top: 160, zIndex: 1 }}>
           <h2 style={{ marginTop: 0 }}>Actions</h2>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <button onClick={async () => { await api.runIngest(); location.reload() }}>Run Ingest</button>
@@ -280,17 +407,31 @@ export function ConsoleView({ api }: { api: Api }) {
             <input placeholder="receipt ids (comma-separated)" value={packIds} onChange={e => setPackIds(e.target.value)} style={{ minWidth: 260 }} />
             <button onClick={() => { if (packIds.trim()) window.open(`/api/receipts/pack?ids=${encodeURIComponent(packIds.trim())}`, '_blank') }}>Download Receipts Pack</button>
             <span>|</span>
-            <a href={`/api/gl_entries.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">GL CSV</a>
-            <a href={`/api/bank_txns.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Bank CSV</a>
-            <a href={`/api/matches.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Matches CSV</a>
-            <a href={`/api/flux/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer" style={{ display: 'none' }} />
-            <a href={`/api/exceptions.csv?limit=${limit}&offset=${offset}${exceptionStatusFilter ? `&status=${encodeURIComponent(exceptionStatusFilter)}` : ''}`} target="_blank" rel="noreferrer">Exceptions CSV</a>
-            <a href={`/api/controls/latest.csv?limit=${limit}`} target="_blank" rel="noreferrer">Controls CSV</a>
-            <a href={`/api/flux/flux.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Flux CSV</a>
-            <a href={`/api/forecast/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Forecast CSV</a>
-            <a href={`/api/spend/spend.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Spend CSV</a>
-            <a href={`/api/apps/billing/invoices.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Invoices CSV</a>
-            <a href={`/api/apps/hris/employees.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Employees CSV</a>
+            {/* CSV for current tab */}
+            {activeTab === 'GL' && (
+              <a href={`/api/gl_entries.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (GL)</a>
+            )}
+            {activeTab === 'Bank' && (
+              <a href={`/api/bank_txns.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Bank)</a>
+            )}
+            {activeTab === 'Matches' && (
+              <a href={`/api/matches.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Matches)</a>
+            )}
+            {activeTab === 'Flux' && (
+              <a href={`/api/flux/flux.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Flux)</a>
+            )}
+            {activeTab === 'Forecast' && (
+              <a href={`/api/forecast/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Forecast)</a>
+            )}
+            {activeTab === 'Exceptions' && (
+              <a href={`/api/exceptions.csv?limit=${limit}&offset=${offset}${exceptionStatusFilter ? `&status=${encodeURIComponent(exceptionStatusFilter)}` : ''}`} target="_blank" rel="noreferrer">Download CSV (Exceptions)</a>
+            )}
+            {activeTab === 'Policies' && (
+              <a href={`/api/controls/latest.csv?limit=${limit}`} target="_blank" rel="noreferrer">Download CSV (Controls Latest)</a>
+            )}
+            {activeTab === 'Spend' && (
+              <a href={`/api/spend/spend.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Spend)</a>
+            )}
             <span>|</span>
             <span>Page:</span>
             <input type="number" min={1} value={Math.floor(offset / Math.max(1, limit)) + 1}
@@ -374,7 +515,7 @@ export function ConsoleView({ api }: { api: Api }) {
                     <td>{r.id}</td>
                     <td>{r.agent}</td>
                     <td>{r.status}</td>
-                    <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
+                    <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -382,179 +523,410 @@ export function ConsoleView({ api }: { api: Api }) {
           </section>
         )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
-          <h2 style={{ marginTop: 0 }}>GL Entries</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">ID</th>
-                <th align="left">Entity</th>
-                <th align="left">Account</th>
-                <th align="right">Amount</th>
-                <th align="left">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.gl.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.id}</td>
-                  <td>{r.entity_id}</td>
-                  <td>{r.account}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
-                  <td>{r.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Spend</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Type</th>
-                <th align="left">Vendor</th>
-                <th align="right">Amount</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {spend.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.type}</td>
-                  <td>{r.vendor || '-'}</td>
-                  <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Exceptions</h2>
-          <div style={{ marginBottom: 8 }}>
-            <select value={exceptionStatusFilter} onChange={e => setExceptionStatusFilter(e.target.value)}>
-              <option value="">All Status</option>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-            </select>
+          <div style={{ display: 'flex', gap: 8, borderBottom: `1px solid #1a2a4a`, marginBottom: 8 }}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ padding: '8px 10px', borderRadius: 6, background: activeTab === t.id ? '#0f1830' : 'transparent', border: '1px solid #1a2a4a', color: colors.text }}>
+                {t.label}
+              </button>
+            ))}
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">ID</th>
-                <th align="left">Type</th>
-                <th align="left">Status</th>
-                <th align="left">Assignee</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exceptions.filter(r => !exceptionStatusFilter || r.status === exceptionStatusFilter).map((r, i) => (
-                <tr key={i}>
-                  <td>{r.id}</td>
-                  <td>{r.type}</td>
-                  <td>{r.status}</td>
-                  <td>{r.assignee || '-'}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+            <input placeholder="Search (id/vendor/account)" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ minWidth: 260 }} />
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={tableDensity === 'compact'} onChange={e => setTableDensity(e.target.checked ? 'compact' : 'comfortable')} /> Compact
+            </label>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={pinnedFirstColumn} onChange={e => setPinnedFirstColumn(e.target.checked)} /> Pin first column
+            </label>
+            <span style={{ color: '#8b99b5' }}>Last run: {jobRuns[0]?.ended_at || jobRuns[0]?.started_at || '—'}</span>
+          </div>
+          {activeTab === 'GL' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>GL Entries</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
+                <thead>
+                  <tr>
+                    <th align="left" style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'id', dir: prev?.tab==='GL' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'entity_id', dir: prev?.tab==='GL' && prev.column==='entity_id' && prev.dir==='asc' ? 'desc':'asc' }))}>Entity</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'account', dir: prev?.tab==='GL' && prev.column==='account' && prev.dir==='asc' ? 'desc':'asc' }))}>Account</button></th>
+                    <th align="right"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'amount', dir: prev?.tab==='GL' && prev.column==='amount' && prev.dir==='asc' ? 'desc':'asc' }))}>Amount</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'GL', column: 'date', dir: prev?.tab==='GL' && prev.column==='date' && prev.dir==='asc' ? 'desc':'asc' }))}>Date</button></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const q = searchQuery.toLowerCase().trim()
+                    const rows = (state.gl || []).filter((r: any) => {
+                      if (!q) return true
+                      return String(r.id).toLowerCase().includes(q) || String(r.entity_id).toLowerCase().includes(q) || String(r.account).toLowerCase().includes(q)
+                    })
+                    if (sort?.tab === 'GL') {
+                      rows.sort((a: any, b: any) => {
+                        const dir = sort.dir === 'asc' ? 1 : -1
+                        const col = sort.column
+                        const va = a[col]
+                        const vb = b[col]
+                        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
+                        return String(va).localeCompare(String(vb)) * dir
+                      })
+                    }
+                    if (rows.length === 0) return (<tr><td colSpan={5}>No GL entries</td></tr>)
+                    return rows.map((r: any, i: number) => (
+                      <tr key={i}>
+                      <td style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}>{r.id}</td>
+                        <td>{r.entity_id}</td>
+                        <td>{r.account}</td>
+                        <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
+                        <td>{r.date}</td>
+                      </tr>
+                    ))
+                  })()}
+                </tbody>
+              </table>
+              )}
+            </div>
+          )}
+          {activeTab === 'Bank' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Bank Transactions</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
+                <thead>
+                  <tr>
+                    <th align="left" style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'id', dir: prev?.tab==='Bank' && prev.column==='id' && prev.dir==='asc' ? 'desc':'asc' }))}>ID</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'account_ref', dir: prev?.tab==='Bank' && prev.column==='account_ref' && prev.dir==='asc' ? 'desc':'asc' }))}>Account</button></th>
+                    <th align="right"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'amount', dir: prev?.tab==='Bank' && prev.column==='amount' && prev.dir==='asc' ? 'desc':'asc' }))}>Amount</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Bank', column: 'date', dir: prev?.tab==='Bank' && prev.column==='date' && prev.dir==='asc' ? 'desc':'asc' }))}>Date</button></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const q = searchQuery.toLowerCase().trim()
+                    const rows = (state.bank || []).filter((r: any) => {
+                      if (!q) return true
+                      return String(r.id).toLowerCase().includes(q) || String(r.account_ref).toLowerCase().includes(q)
+                    })
+                    if (sort?.tab === 'Bank') {
+                      rows.sort((a: any, b: any) => {
+                        const dir = sort.dir === 'asc' ? 1 : -1
+                        const col = sort.column
+                        const va = a[col]
+                        const vb = b[col]
+                        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
+                        return String(va).localeCompare(String(vb)) * dir
+                      })
+                    }
+                    if (rows.length === 0) return (<tr><td colSpan={4}>No bank transactions</td></tr>)
+                    return rows.map((r: any, i: number) => (
+                      <tr key={i}>
+                      <td style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}>{r.id}</td>
+                        <td>{r.account_ref}</td>
+                        <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
+                        <td>{r.date}</td>
+                      </tr>
+                    ))
+                  })()}
+                </tbody>
+              </table>
+              )}
+            </div>
+          )}
+          {activeTab === 'Matches' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Matches</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableDensity === 'compact' ? 12 : 14 }}>
+                <thead>
+                  <tr>
+                    <th align="left" style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'gl_entry_id', dir: prev?.tab==='Matches' && prev.column==='gl_entry_id' && prev.dir==='asc' ? 'desc':'asc' }))}>GL Entry</button></th>
+                    <th align="left"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'bank_txn_id', dir: prev?.tab==='Matches' && prev.column==='bank_txn_id' && prev.dir==='asc' ? 'desc':'asc' }))}>Bank Txn</button></th>
+                    <th align="right"><button onClick={() => setSort(prev => ({ tab: 'Matches', column: 'confidence', dir: prev?.tab==='Matches' && prev.column==='confidence' && prev.dir==='asc' ? 'desc':'asc' }))}>Confidence</button></th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const q = searchQuery.toLowerCase().trim()
+                    const rows = (state.matches || []).filter((r: any) => {
+                      if (!q) return true
+                      return String(r.gl_entry_id).toLowerCase().includes(q) || String(r.bank_txn_id).toLowerCase().includes(q)
+                    })
+                    if (sort?.tab === 'Matches') {
+                      rows.sort((a: any, b: any) => {
+                        const dir = sort.dir === 'asc' ? 1 : -1
+                        const col = sort.column
+                        const va = a[col]
+                        const vb = b[col]
+                        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
+                        return String(va).localeCompare(String(vb)) * dir
+                      })
+                    }
+                    if (rows.length === 0) return (<tr><td colSpan={4}>No matches</td></tr>)
+                    return rows.map((r: any, i: number) => {
+                      const conf = Number(r.confidence)
+                      const color = conf >= 0.9 ? '#2ecc71' : conf >= 0.7 ? '#f39c12' : '#e74c3c'
+                      return (
+                        <tr key={i}>
+                          <td style={{ position: pinnedFirstColumn ? 'sticky' as const : undefined, left: pinnedFirstColumn ? 0 : undefined, background: pinnedFirstColumn ? '#0f1830' : undefined }}>{r.gl_entry_id}</td>
+                          <td>{r.bank_txn_id}</td>
+                          <td style={{ textAlign: 'right', color }}>{conf.toFixed(2)}</td>
+                          <td>{r.receipt_id ? <a href={"#/"} onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                        </tr>
+                      )
+                    })
+                  })()}
+                </tbody>
+              </table>
+              )}
+            </div>
+          )}
+          {activeTab === 'Flux' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Flux</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Entity</th>
+                    <th align="left">Account</th>
+                    <th align="left">Period</th>
+                    <th align="left">Drivers</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flux.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.entity_id}</td>
+                      <td>{r.account}</td>
+                      <td>{r.period}</td>
+                      <td>{JSON.stringify(r.drivers)}</td>
+                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Forecast' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Forecast</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Period</th>
+                    <th align="left">Params</th>
+                    <th align="left">Outputs</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {forecast.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.period}</td>
+                      <td>{JSON.stringify(r.params)}</td>
+                      <td>{JSON.stringify(r.outputs)}</td>
+                      <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {activeTab === 'Exceptions' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Exceptions</h2>
+              <div style={{ marginBottom: 8 }}>
+                <select value={exceptionStatusFilter} onChange={e => setExceptionStatusFilter(e.target.value)}>
+                  <option value="">All Status</option>
+                  <option value="open">Open</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">ID</th>
+                    <th align="left">Type</th>
+                    <th align="left">Status</th>
+                    <th align="left">Assignee</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exceptions.length === 0 && <tr><td colSpan={5}>No exceptions</td></tr>}
+                  {exceptions.filter(r => !exceptionStatusFilter || r.status === exceptionStatusFilter).map((r, i) => {
+                    const isOpen = r.status === 'open'
+                    return (
+                      <tr key={i}>
+                        <td>{r.id}</td>
+                        <td>{r.type}</td>
+                        <td>
+                          <span style={{ borderRadius: 999, padding: '2px 8px', fontSize: 12, background: isOpen ? 'rgba(243,156,18,.15)' : 'rgba(46,204,113,.15)', color: isOpen ? '#f39c12' : '#2ecc71' }}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td>{r.assignee || '-'}</td>
+                        <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              )}
+            </div>
+          )}
+          {activeTab === 'Spend' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Spend</h2>
+              {loading ? (
+                <div>
+                  {Array.from({ length: 5 }).map((_, i) => (<div key={i} style={{ height: 16, background: '#0f1830', borderRadius: 6, margin: '6px 0' }} />))}
+                </div>
+              ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Type</th>
+                    <th align="left">Vendor</th>
+                    <th align="right">Amount</th>
+                    <th align="left">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {spend.length === 0 && <tr><td colSpan={4}>No spend issues</td></tr>}
+                  {spend.map((r, i) => {
+                    const t = String(r.type || '')
+                    const isDup = t.toLowerCase().includes('dup')
+                    const isSaas = t.toLowerCase().includes('saas')
+                    const bg = isDup || isSaas ? 'rgba(243,156,18,.15)' : 'rgba(139,153,181,.15)'
+                    const fg = isDup || isSaas ? '#f39c12' : '#8b99b5'
+                    return (
+                      <tr key={i}>
+                        <td><span style={{ borderRadius: 999, padding: '2px 8px', fontSize: 12, background: bg, color: fg }}>{r.type}</span></td>
+                        <td>{r.vendor || '-'}</td>
+                        <td style={{ textAlign: 'right' }}>{r.amount != null ? Number(r.amount).toFixed(2) : '-'}</td>
+                        <td>{r.receipt_id ? <a href="#" onClick={(e) => { e.preventDefault(); openReceipt(r.receipt_id) }}>{r.receipt_id}</a> : '-'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              )}
+              {/* Spend visuals: Pareto and Treemap */}
+              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(220px,1fr))', gap: 12, alignItems: 'center' }}>
+                {/* Pareto */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Spend Pareto (Top Vendors)</h3>
+                  {(() => {
+                    const sums: Record<string, number> = {}
+                    ;(spend || []).forEach((s: any) => { const v = String(s.vendor || 'Other'); const amt = Number(s.amount || 0); sums[v] = (sums[v] || 0) + amt })
+                    const entries = Object.entries(sums).map(([vendor, total]) => ({ vendor, total: Number(total) })).sort((a, b) => b.total - a.total).slice(0, 8)
+                    const totalAll = entries.reduce((acc, x) => acc + x.total, 0) || 1
+                    const W = 300, H = 140, pad = 28, bar = 12, gap = 8
+                    let y = pad
+                    return (
+                      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                        {entries.map(e => {
+                          const w = Math.max(4, (e.total / totalAll) * (W - pad * 2))
+                          const g = (
+                            <g key={e.vendor}>
+                              <text x={pad} y={y - 4} fill="#8b99b5" style={{ fontSize: 10 }}>{e.vendor}</text>
+                              <rect x={pad} y={y} width={w} height={bar} fill="#57a6ff">
+                                <title>{`${e.vendor}: $${e.total.toFixed(2)}`}</title>
+                              </rect>
+                            </g>
+                          )
+                          y += bar + gap
+                          return g
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+                {/* Treemap (simple row layout) */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Spend Treemap (Simple)</h3>
+                  {(() => {
+                    const sums: Record<string, number> = {}
+                    ;(spend || []).forEach((s: any) => { const v = String(s.vendor || 'Other'); const amt = Number(s.amount || 0); sums[v] = (sums[v] || 0) + amt })
+                    const entries = Object.entries(sums).map(([vendor, total]) => ({ vendor, total: Number(total) })).sort((a, b) => b.total - a.total).slice(0, 8)
+                    const totalAll = entries.reduce((acc, x) => acc + x.total, 0) || 1
+                    const W = 300, H = 140, pad = 8
+                    const usableW = W - pad * 2, usableH = H - pad * 2
+                    let x = pad
+                    return (
+                      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+                        {entries.map((e, i) => {
+                          const w = Math.max(8, (e.total / totalAll) * usableW)
+                          const g = (
+                            <g key={e.vendor}>
+                              <rect x={x} y={pad} width={w} height={usableH} fill={i % 2 === 0 ? '#2ecc71' : '#57a6ff'}>
+                                <title>{`${e.vendor}: $${e.total.toFixed(2)}`}</title>
+                              </rect>
+                              <text x={x + 4} y={pad + 12} fill={colors.bg} style={{ fontSize: 10 }}>{e.vendor}</text>
+                            </g>
+                          )
+                          x += w + 2
+                          return g
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+              </div>
+            </div>
+          )}
+          {activeTab === 'Policies' && (
+            <div>
+              <h2 style={{ marginTop: 0 }}>Policies</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">Key</th>
+                    <th align="left">Active</th>
+                    <th align="left">Checksum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {policies.map((p, i) => (
+                    <tr key={i}>
+                      <td>{p.key}</td>
+                      <td>{String(p.active)}</td>
+                      <td>{p.checksum?.slice(0, 10)}...</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Flux</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Entity</th>
-                <th align="left">Account</th>
-                <th align="left">Period</th>
-                <th align="left">Drivers</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {flux.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.entity_id}</td>
-                  <td>{r.account}</td>
-                  <td>{r.period}</td>
-                  <td>{JSON.stringify(r.drivers)}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Forecast</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">Period</th>
-                <th align="left">Params</th>
-                <th align="left">Outputs</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {forecast.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.period}</td>
-                  <td>{JSON.stringify(r.params)}</td>
-                  <td>{JSON.stringify(r.outputs)}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8 }}>
-          <h2 style={{ marginTop: 0 }}>Bank Transactions</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">ID</th>
-                <th align="left">Account</th>
-                <th align="right">Amount</th>
-                <th align="left">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.bank.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.id}</td>
-                  <td>{r.account_ref}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(r.amount).toFixed(2)}</td>
-                  <td>{r.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Matches</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th align="left">GL Entry</th>
-                <th align="left">Bank Txn</th>
-                <th align="right">Confidence</th>
-                <th align="left">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.matches.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.gl_entry_id}</td>
-                  <td>{r.bank_txn_id}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(r.confidence).toFixed(2)}</td>
-                  <td>{r.receipt_id ? <a href={`/receipts/${r.receipt_id}`} target="_blank" rel="noreferrer">{r.receipt_id}</a> : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        {drawerOpen && (
+          <aside style={{ position: 'fixed', top: 0, right: 0, width: 420, maxWidth: '90vw', height: '100vh', background: '#0f1830', borderLeft: '1px solid #1a2a4a', boxShadow: '-12px 0 24px rgba(0,0,0,.3)', zIndex: 3, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: 12, borderBottom: '1px solid #1a2a4a' }}>
+              <strong style={{ marginRight: 'auto' }}>Receipt {drawerId}</strong>
+              <button onClick={() => setDrawerOpen(false)}>Close</button>
+            </div>
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, padding: '12px 16px' }}>{drawerJson ? JSON.stringify(drawerJson, null, 2) : 'Loading...'}</pre>
+          </aside>
+        )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>Controls</h2>
           <div style={{ marginBottom: 8 }}>
