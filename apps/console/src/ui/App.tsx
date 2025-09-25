@@ -98,6 +98,14 @@ const api = {
     const r = await fetch(`/api/treasury/cash?days=${days}`)
     return r.json()
   },
+  async getKpiAudit() {
+    const r = await fetch('/api/kpi/audit')
+    return r.json()
+  },
+  async runDQ() {
+    const r = await fetch('/api/agents/dq/run', { method: 'POST' })
+    return r.json()
+  },
 }
 
 export function App() {

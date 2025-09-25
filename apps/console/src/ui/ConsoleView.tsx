@@ -33,6 +33,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [limit, setLimit] = useState<number>(100)
   const [offset, setOffset] = useState<number>(0)
   const [proposeMode, setProposeMode] = useState<boolean>(false)
+  const [kpiAudit, setKpiAudit] = useState<any>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -53,6 +54,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setKpiTreasury(await api.getKpiTreasury()) } catch {}
       try { setPolicies(await api.listPolicies()) } catch {}
       try { const cash = await api.getTreasuryCash(14); setCashSeries(cash?.series || []) } catch {}
+      try { setKpiAudit(await api.getKpiAudit()) } catch {}
     })()
   }, [api, limit, offset])
 
@@ -130,6 +132,8 @@ export function ConsoleView({ api }: { api: Api }) {
               onChange={e => { const page = Math.max(1, parseInt(e.target.value || '1', 10)); setOffset((page - 1) * Math.max(1, limit)); }} style={{ width: 60 }} />
             <span>Limit:</span>
             <input type="number" min={1} value={limit} onChange={e => setLimit(Math.max(1, parseInt(e.target.value || '1', 10)))} style={{ width: 80 }} />
+            <span>|</span>
+            <button onClick={async () => { await api.runDQ(); location.reload() }}>Run DQ Sentinel</button>
           </div>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
@@ -176,6 +180,12 @@ export function ConsoleView({ api }: { api: Api }) {
             </tbody>
           </table>
         </section>
+        {kpiAudit && (
+          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Audit</h2>
+            <div>Receipts Total: {kpiAudit.receipts_total}</div>
+          </section>
+        )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>GL Entries</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
