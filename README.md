@@ -315,6 +315,7 @@ pytest -q
 ### Docs demo (GitHub Pages)
 
 - UI/UX Demo: https://aurelius-in.github.io/DeepChief/
+- Shortcuts: [Controls](https://aurelius-in.github.io/DeepChief/#controls) · [Spend](https://aurelius-in.github.io/DeepChief/#spend) · [Audit](https://aurelius-in.github.io/DeepChief/#audit) · [Architecture](https://aurelius-in.github.io/DeepChief/#architecture)
 - Build: cd apps/console-demo && npm i && npm run build
 - Output goes to docs/ with 404.html SPA fallback
 - Commit and push to publish via GitHub Pages
