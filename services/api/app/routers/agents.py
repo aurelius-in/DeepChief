@@ -15,6 +15,7 @@ from ..models.reconcile_match import ReconcileMatch
 from ..models.flux_expl import FluxExpl
 from ..models.forecast_snapshot import ForecastSnapshot
 from ..models.exception_case import ExceptionCase
+from ..models.job_run import JobRun
 from services.receipts.sdk import create_receipt
 
 
@@ -61,7 +62,11 @@ def auto_reconciler_run(window_days: int = 1) -> dict[str, Any]:
                 sess.add(m)
                 matches.append({"gl_entry_id": g.id, "bank_txn_id": b.id, "receipt_id": m.receipt_id})
         sess.commit()
-        return {"matched": len(matches), "matches": matches}
+        outputs = {"matched": len(matches), "matches": matches}
+        jr = JobRun(id=str(uuid.uuid4()), agent="auto_reconciler", inputs={"window_days": window_days}, outputs=outputs, status="completed", receipt_id=matches[0]["receipt_id"] if matches else None)
+        sess.add(jr)
+        sess.commit()
+        return outputs
     finally:
         sess.close()
 
@@ -77,8 +82,11 @@ def flux_run(entity_id: str = "E1", account: str = "AR", period: str = "2025-08"
         header = create_receipt(payload, kind="flux_expl", links={"entity_id": entity_id, "account": account})
         fx = FluxExpl(id=str(uuid.uuid4()), entity_id=entity_id, account=account, period=period, drivers=drivers, narrative=narrative, receipt_id=header["id"])
         sess.add(fx)
+        outputs = {"id": fx.id, "receipt_id": fx.receipt_id}
+        jr = JobRun(id=str(uuid.uuid4()), agent="flux", inputs={"entity_id": entity_id, "account": account, "period": period}, outputs=outputs, status="completed", receipt_id=fx.receipt_id)
+        sess.add(jr)
         sess.commit()
-        return {"id": fx.id, "receipt_id": fx.receipt_id}
+        return outputs
     finally:
         sess.close()
 
@@ -93,8 +101,11 @@ def forecast_run(period: str = "2025-09") -> dict[str, Any]:
         header = create_receipt(payload, kind="forecast_snapshot", links={})
         fs = ForecastSnapshot(id=str(uuid.uuid4()), period=period, params=params, outputs=outputs, receipt_id=header["id"])
         sess.add(fs)
+        outputs = {"id": fs.id, "receipt_id": fs.receipt_id}
+        jr = JobRun(id=str(uuid.uuid4()), agent="forecast", inputs={"period": period}, outputs=outputs, status="completed", receipt_id=fs.receipt_id)
+        sess.add(jr)
         sess.commit()
-        return {"id": fs.id, "receipt_id": fs.receipt_id}
+        return outputs
     finally:
         sess.close()
 
@@ -130,8 +141,11 @@ def exception_triage_run(entity_id: str = "E1") -> dict[str, Any]:
                 )
                 sess.add(ec)
                 exceptions.append({"id": ec.id, "receipt_id": ec.receipt_id, "type": ec.type})
+        outputs = {"created": len(exceptions), "cases": exceptions}
+        jr = JobRun(id=str(uuid.uuid4()), agent="exception_triage", inputs={"entity_id": entity_id}, outputs=outputs, status="completed", receipt_id=exceptions[0]["receipt_id"] if exceptions else None)
+        sess.add(jr)
         sess.commit()
-        return {"created": len(exceptions), "cases": exceptions}
+        return outputs
     finally:
         sess.close()
 
@@ -141,7 +155,36 @@ def treasury_run() -> dict[str, Any]:
     # Stub treasury calculation
     payload = {"agent": "treasury", "outputs": {"projected_buffer_days": 42, "covenant_risk_flags": [{"name": "Leverage", "status": "watch"}]}}
     header = create_receipt(payload, kind="treasury_kpi", links={})
-    return {"receipt_id": header["id"], "outputs": payload["outputs"]}
+    outputs = {"receipt_id": header["id"], "outputs": payload["outputs"]}
+    sess = _session()
+    try:
+        sess.add(JobRun(id=str(uuid.uuid4()), agent="treasury", inputs={}, outputs=outputs, status="completed", receipt_id=header["id"]))
+        sess.commit()
+    finally:
+        sess.close()
+    return outputs
+
+
+@router.post("/dq/run")
+def dq_run() -> dict[str, Any]:
+    sess = _session()
+    try:
+        latest_gl = sess.query(GLEntry).order_by(GLEntry.date.desc()).first()
+        latest_bank = sess.query(BankTxn).order_by(BankTxn.date.desc()).first()
+        from datetime import date as _date
+        today = _date.today()
+        freshness = {
+            "gl_days_since": (today - latest_gl.date).days if latest_gl else None,
+            "bank_days_since": (today - latest_bank.date).days if latest_bank else None,
+        }
+        payload = {"agent": "dq_sentinel", "outputs": freshness}
+        header = create_receipt(payload, kind="dq_kpi", links={})
+        outputs = {"receipt_id": header["id"], **freshness}
+        sess.add(JobRun(id=str(uuid.uuid4()), agent="dq_sentinel", inputs={}, outputs=outputs, status="completed", receipt_id=header["id"]))
+        sess.commit()
+        return outputs
+    finally:
+        sess.close()
 
 
 

@@ -12,6 +12,7 @@ from ..models.bank_txn import BankTxn
 from ..core.config import settings
 from services.connectors.erp import NetsuiteMock, ERPClient
 from services.connectors.bank import BankMock, BankClient
+from fastapi.responses import PlainTextResponse
 
 
 router = APIRouter(prefix="", tags=["ingest"])
@@ -45,10 +46,10 @@ def ingest_mock() -> dict[str, Any]:
 
 
 @router.get("/gl_entries")
-def list_gl_entries(limit: int = 100) -> list[dict[str, Any]]:
+def list_gl_entries(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     sess = _session()
     try:
-        rows = sess.query(GLEntry).limit(limit).all()
+        rows = sess.query(GLEntry).offset(offset).limit(limit).all()
         return [
             {
                 "id": r.id,
@@ -65,10 +66,10 @@ def list_gl_entries(limit: int = 100) -> list[dict[str, Any]]:
 
 
 @router.get("/bank_txns")
-def list_bank_txns(limit: int = 100) -> list[dict[str, Any]]:
+def list_bank_txns(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
     sess = _session()
     try:
-        rows = sess.query(BankTxn).limit(limit).all()
+        rows = sess.query(BankTxn).offset(offset).limit(limit).all()
         return [
             {
                 "id": r.id,
@@ -82,4 +83,29 @@ def list_bank_txns(limit: int = 100) -> list[dict[str, Any]]:
     finally:
         sess.close()
 
+
+@router.get("/gl_entries.csv", response_class=PlainTextResponse)
+def export_gl_entries_csv(limit: int = 1000, offset: int = 0) -> str:
+    sess = _session()
+    try:
+        rows = sess.query(GLEntry).offset(offset).limit(limit).all()
+        lines = ["id,entity_id,account,amount,date,source_ref"]
+        for r in rows:
+            lines.append(f"{r.id},{r.entity_id},{r.account},{float(r.amount):.2f},{r.date.isoformat()},{r.source_ref or ''}")
+        return "\n".join(lines) + "\n"
+    finally:
+        sess.close()
+
+
+@router.get("/bank_txns.csv", response_class=PlainTextResponse)
+def export_bank_txns_csv(limit: int = 1000, offset: int = 0) -> str:
+    sess = _session()
+    try:
+        rows = sess.query(BankTxn).offset(offset).limit(limit).all()
+        lines = ["id,account_ref,amount,date"]
+        for r in rows:
+            lines.append(f"{r.id},{r.account_ref},{float(r.amount):.2f},{r.date.isoformat()}")
+        return "\n".join(lines) + "\n"
+    finally:
+        sess.close()
 

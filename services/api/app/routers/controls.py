@@ -64,7 +64,7 @@ def evaluate_je_materiality(sess: Session, materiality: float = 100000.0) -> lis
 
 
 @router.post("/run")
-def run_controls(window_days: int = 30) -> dict[str, Any]:
+def run_controls(window_days: int = 30, mode: str = "read_only") -> dict[str, Any]:
     sess = _session()
     try:
         end = date.today()
@@ -72,6 +72,15 @@ def run_controls(window_days: int = 30) -> dict[str, Any]:
         all_results: list[dict[str, Any]] = []
 
         def run_one(key: str, eval_findings: list[dict[str, Any]]):
+            if mode.lower() == "propose":
+                # don't persist; return proposed changes only
+                header = create_receipt(
+                    payload={"control": key, "findings": eval_findings},
+                    kind="control_run_proposed",
+                    links={}
+                )
+                all_results.append({"control_key": key, "findings": eval_findings, "proposed": True, "receipt_id": header["id"]})
+                return
             header = create_receipt(
                 payload={"control": key, "findings": eval_findings},
                 kind="control_run",
@@ -93,7 +102,8 @@ def run_controls(window_days: int = 30) -> dict[str, Any]:
         run_one("CTRL_VendorBankChange", evaluate_vendor_bank_change(sess))
         run_one("CTRL_JEMateriality", evaluate_je_materiality(sess))
 
-        sess.commit()
+        if mode.lower() != "propose":
+            sess.commit()
         return {"runs": all_results}
     finally:
         sess.close()

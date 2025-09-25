@@ -54,7 +54,7 @@ export function ConsoleView({ api }: { api: Api }) {
   return (
     <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text }}>
       <header style={{ padding: 16, borderBottom: `1px solid ${colors.panel}`, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <img src="/wordmark_dc.png" alt="DeepChief" height={28} />
+        <img src="wordmark_dc.png" alt="DeepChief" height={28} />
         <h1 style={{ margin: 0 }}>Console</h1>
       </header>
       <main style={{ maxWidth: 1200, margin: '24px auto', padding: '0 16px' }}>
@@ -66,6 +66,8 @@ export function ConsoleView({ api }: { api: Api }) {
               <div>GL: {kpi.gl_count}</div>
               <div>Bank: {kpi.bank_count}</div>
               <div>Matched: {kpi.matched_count}</div>
+              <div>Exceptions Open: {kpi.exceptions_open ?? '-'}</div>
+              <div>Controls Pass Rate: {kpi.controls_pass_rate != null ? `${kpi.controls_pass_rate.toFixed(1)}%` : '-'}</div>
               <div>| Spend Issues: {kpiSpend?.issues_total ?? '-'}</div>
               <div>Duplicates: {kpiSpend?.duplicates ?? '-'}</div>
               <div>SaaS: {kpiSpend?.saas ?? '-'}</div>

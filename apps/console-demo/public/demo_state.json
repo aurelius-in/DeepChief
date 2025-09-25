@@ -22,12 +22,13 @@
     { "id": "bnk_0", "account_ref": "Cash", "amount": -1234.56, "date": "2025-08-01" },
     { "id": "bnk_1", "account_ref": "Cash", "amount": 900.25, "date": "2025-08-02" }
   ],
-  "kpi": { "auto_match_rate": 62.5, "gl_count": 3, "bank_count": 2, "matched_count": 2 }
+  "kpi": { "auto_match_rate": 62.5, "gl_count": 3, "bank_count": 2, "matched_count": 2, "exceptions_open": 4, "controls_pass_rate": 66.7 }
   ,
   "kpi_spend": { "issues_total": 2, "duplicates": 1, "saas": 1 },
   "kpi_treasury": { "projected_buffer_days": 42, "covenant_risk_flags": [{"name": "Leverage", "status": "watch"}] },
   "matches": [
-    { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" }
+    { "gl_entry_id": "gl_0_cash", "bank_txn_id": "bnk_0", "confidence": 1.0, "receipt_id": "00000000-0000-0000-0000-000000000001" },
+    { "gl_entry_id": "gl_1_cash", "bank_txn_id": "bnk_1", "confidence": 0.98, "receipt_id": "00000000-0000-0000-0000-000000000008" }
   ],
   "controls": [
     {
@@ -36,6 +37,20 @@
       "window_end": "2025-09-24",
       "findings": { "items": [ { "je_id": "gl_0_ar", "amount_abs": 35000, "flag": "approval_required" } ] },
       "receipt_id": "00000000-0000-0000-0000-000000000002"
+    },
+    {
+      "control_key": "CTRL_VendorBankChange",
+      "window_start": "2025-08-01",
+      "window_end": "2025-09-24",
+      "findings": { "items": [ { "bank_txn_id": "bnk_0", "flag": "bank_change_review" } ] },
+      "receipt_id": "00000000-0000-0000-0000-000000000009"
+    },
+    {
+      "control_key": "CTRL_JEMateriality",
+      "window_start": "2025-08-01",
+      "window_end": "2025-09-24",
+      "findings": { "items": [ { "je_id": "gl_1_cash", "amount_abs": 125000, "flag": "materiality_review" } ] },
+      "receipt_id": "00000000-0000-0000-0000-00000000000a"
     }
   ]
   ,
@@ -58,7 +73,10 @@
     }
   ],
   "exceptions": [
-    { "id": "ex_1", "entity_id": "E1", "type": "recon_break", "status": "open", "assignee": null, "receipt_id": "00000000-0000-0000-0000-000000000005" }
+    { "id": "ex_1", "entity_id": "E1", "type": "recon_break", "status": "open", "assignee": null, "receipt_id": "00000000-0000-0000-0000-000000000005" },
+    { "id": "ex_2", "entity_id": "E1", "type": "recon_break", "status": "open", "assignee": "analyst1", "receipt_id": "00000000-0000-0000-0000-00000000000b" },
+    { "id": "ex_3", "entity_id": "E1", "type": "control_finding", "status": "open", "assignee": null, "receipt_id": "00000000-0000-0000-0000-00000000000c" },
+    { "id": "ex_4", "entity_id": "E1", "type": "control_finding", "status": "open", "assignee": "controller", "receipt_id": "00000000-0000-0000-0000-00000000000d" }
   ],
   "spend": [
     { "type": "duplicate_payment", "vendor": "Acme", "amount": 123.45, "receipt_id": "00000000-0000-0000-0000-000000000006" },
