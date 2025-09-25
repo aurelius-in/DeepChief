@@ -1,0 +1,21 @@
+{
+  "whyCard": {"policy": "CTRL_ApprovalThreshold", "inputs": {"je_id": "JE2024-0001", "amount_abs": 35000, "created_by": "user1"}, "tools_used": ["rule-engine"], "result": {"flag": "approval_required", "notify": "controller"}},
+  "gl": [{"id":"gl_0_cash","entity_id":"E1","account":"Cash","amount":-1234.56,"date":"2025-08-01"},{"id":"gl_0_ar","entity_id":"E1","account":"AR","amount":2200.00,"date":"2025-08-01"}],
+  "bank": [{"id":"bnk_0","account_ref":"Cash","amount":-1234.56,"date":"2025-08-01"},{"id":"bnk_1","account_ref":"Cash","amount":900.25,"date":"2025-08-02"}],
+  "kpi": {"auto_match_rate":62.5,"gl_count":3,"bank_count":2,"matched_count":2,"exceptions_open":4,"exceptions_mttr_days":2.5,"controls_pass_rate":66.7,"flux_ready_percent":50.0},
+  "kpi_spend": {"issues_total":2,"duplicates":1,"saas":1,"duplicate_detected_value":123.45,"saas_waste_estimate":0,"touchless_invoices_percent":35.0},
+  "kpi_treasury": {"projected_buffer_days":42,"covenant_risk_flags":[{"name":"Leverage","status":"watch"}]},
+  "kpi_audit": {"receipts_total":128,"receipts_count_by_type":{"match":76,"control":28,"flux":8,"forecast":6,"spend":10},"pbc_requests_served":12},
+  "kpi_dq": {"gl_days_since":2,"bank_days_since":1},
+  "job_runs": [{"id":"jr_1","agent":"auto_reconciler","status":"completed","receipt_id":"00000000-0000-0000-0000-000000000001"}],
+  "invoices": [{"invoice_id":"INV-1001","vendor":"Acme","amount":123.45,"status":"open"}],
+  "employees": [{"employee_id":"E-001","name":"Analyst One","department":"Finance"}],
+  "matches": [{"gl_entry_id":"gl_0_cash","bank_txn_id":"bnk_0","confidence":1.0,"receipt_id":"00000000-0000-0000-0000-000000000001"}],
+  "controls": [{"control_key":"CTRL_ApprovalThreshold","window_start":"2025-08-01","window_end":"2025-09-24","findings":{"items":[{"je_id":"gl_0_ar","amount_abs":35000,"flag":"approval_required"}]},"receipt_id":"00000000-0000-0000-0000-000000000002"}],
+  "flux": [{"entity_id":"E1","account":"AR","period":"2025-08","drivers":{"volume":0.6,"price":0.3,"fx":0.1},"narrative":"Variance driven by volume and price in 2025-08","receipt_id":"00000000-0000-0000-0000-000000000003"}],
+  "forecast": [{"period":"2025-09","params":{"ar_curve_days":[0.5,0.3,0.2],"ap_curve_days":[0.6,0.3,0.1]},"outputs":{"cash_buffer_days":45},"receipt_id":"00000000-0000-0000-0000-000000000004"}],
+  "exceptions": [{"id":"ex_1","entity_id":"E1","type":"recon_break","status":"open","assignee":null,"receipt_id":"00000000-0000-0000-0000-000000000005"}],
+  "spend": [{"type":"duplicate_payment","vendor":"Acme","amount":123.45,"receipt_id":"00000000-0000-0000-0000-000000000006"}],
+  "policies": [{"key":"CTRL_ApprovalThreshold","active":true,"checksum":"abc123def456","yaml":"policy: CTRL_ApprovalThreshold"}]
+}
+
