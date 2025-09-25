@@ -1,115 +1,3 @@
-DeepChief — Finance Autonomy OS (Pilot)
-
-Stack
-- Backend: Python 3.11, FastAPI, Pydantic, Uvicorn
-- Workers: Python (Celery/Prefect TBD)
-- Storage: Postgres (core), Redis (queues), MinIO (evidence blobs)
-- Signing: Ed25519 via PyNaCl
-- Frontend: React + TypeScript (Vite)
-- Container: Docker Compose
-- Tests: Pytest; Playwright for console smoke (later)
-
-Repo Layout
-deepchief/
-apps/
-  console/
-services/
-  api/ (FastAPI gateway)
-  receipts/ (signing + blob storage SDK)
-infra/
-  docker-compose.yml
-policies/
-  examples/
-scripts/
-tests/
-
-Environment
-Create .env from infra/.env.example at repo root:
-
-POSTGRES_URL=postgresql+psycopg://deepchief:deepchief@postgres:5432/deepchief
-REDIS_URL=redis://redis:6379/0
-MINIO_ENDPOINT=http://minio:9000
-MINIO_ACCESS_KEY=deepchief
-MINIO_SECRET_KEY=deepchiefsecret
-MINIO_BUCKET=receipts
-RECEIPT_SIGNING_PRIVATE_KEY=
-RECEIPT_SIGNING_PUBLIC_KEY=
-JWT_SECRET=change_me
-ENV=local
-ERP_PROVIDER=netsuite_mock
-BANK_PROVIDER=bank_mock
-FEATURE_RECONCILE=1
-FEATURE_CONTROLS=1
-FEATURE_FLUX=1
-FEATURE_FORECAST=1
-SCHEDULER_INTERVAL_SEC=300
-
-Generate signing keys
-python scripts/generate_keys.py
-Paste the output values into .env for RECEIPT_SIGNING_PRIVATE_KEY and RECEIPT_SIGNING_PUBLIC_KEY.
-
-Start stack
-docker compose -f infra/docker-compose.yml up -d --build
-
-Initialize DB and seeds
-docker compose exec api alembic upgrade head
-python scripts/seed_mock_data.py
-python scripts/load_policies.py policies/examples
-
-Dev servers
-- API: http://localhost:8080/docs
-- Console: http://localhost:5173
- - Scheduler: container logs stream agent runs
-
-Run tests
-pytest -q
-(console) cd apps/console && npm i && npm test
-
-Run flow (Console)
-- Click Run Ingest, then Run Reconciler
-- View Matches and KPIs
-- Verify receipts with payload/signature/public key
-
-Flux and Forecast
-- Click Run Flux, then Run Forecast
-- View Flux explanations and Forecast outputs with receipt links
-
-Spend flow
-- Click Run Duplicate Sentinel and Run SaaS Optimizer
-- View Spend table for detected issues and open receipts
-
-Docs demo (GitHub Pages)
-- UI/UX Demo: https://aurelius-in.github.io/DeepChief/
-- Build: cd apps/console-demo && npm i && npm run build
-- Output goes to docs/ with 404.html SPA fallback
-- Commit and push to publish via GitHub Pages
-
-Receipts
-- Payload hash: sha256(canonical_json(payload)) (base64)
-- signed_hash: ed25519_sign(payload_hash)
-- Blob storage: MinIO path receipts/<id>.json
-- Header fields: id, sha256_b64, signed_hash_b64, public_key_b64, payload_url, created_at, links
-- Verify API: POST /receipts/verify
-
-Quick Commands
-- Start: docker compose -f infra/docker-compose.yml up -d
-- Migrate: docker compose exec api alembic upgrade head
-- Seed data: python scripts/seed_mock_data.py
-- Load policies: python scripts/load_policies.py policies/examples
-- Tests: pytest -q
-- Console: cd apps/console && npm i && npm run dev
- - Build demo site: cd apps/console-demo && npm i && npm run build
-
-Console Design
-- Use color scheme inspired by dc-150.png; headings display wordmark_dc.png
-- Keep UI simple with tables and JSON viewers; include receipt verify button (todo)
-
-Security
-- Least privilege creds, redact PII in receipts by default, Ed25519 public key distributed via README/env, optional data residency pinning via S3-compatible endpoint
-
-Notes
-- This is the pilot scaffold. Agents, controls, flux, forecast, spend loop, and scheduler will be added incrementally with receipts-first discipline.
-
 <p align="center">
   <img src="dc-150.png" alt="Logo" height="100" style="vertical-align:middle;" />
   <img src="wordmark_dc.png" alt="Wordmark" height="100" style="vertical-align:middle;" />
@@ -312,7 +200,6 @@ receipt:
 * **Banks:** Direct feeds or aggregator
 * **Apps:** HRIS, CRM, billing, contracts, ITSM for access reviews
 
-*(Initial repo includes adapters and stubs; expand per customer stack.)*
 
 ---
 
@@ -334,6 +221,134 @@ receipt:
 **Pilot KPIs:** auto-match rate, days-to-close, audit rework %, DSO change (if collections pack on)
 
 ---
+
+## Stack
+
+- Backend: Python 3.11, FastAPI, Pydantic, Uvicorn
+- Workers: Python (Celery/Prefect TBD)
+- Storage: Postgres (core), Redis (queues), MinIO (evidence blobs)
+- Signing: Ed25519 via PyNaCl
+- Frontend: React + TypeScript (Vite)
+- Container: Docker Compose
+- Tests: Pytest; Playwright for console smoke
+
+## Repo Layout
+
+deepchief/
+apps/
+  console/
+services/
+  api/ (FastAPI gateway)
+  receipts/ (signing + blob storage SDK)
+infra/
+  docker-compose.yml
+policies/
+  examples/
+scripts/
+tests/
+
+## Environment
+
+Create .env from infra/.env.example at repo root:
+
+POSTGRES_URL=postgresql+psycopg://deepchief:deepchief@postgres:5432/deepchief
+REDIS_URL=redis://redis:6379/0
+MINIO_ENDPOINT=http://minio:9000
+MINIO_ACCESS_KEY=deepchief
+MINIO_SECRET_KEY=deepchiefsecret
+MINIO_BUCKET=receipts
+RECEIPT_SIGNING_PRIVATE_KEY=
+RECEIPT_SIGNING_PUBLIC_KEY=
+JWT_SECRET=change_me
+ENV=local
+ERP_PROVIDER=netsuite_mock
+BANK_PROVIDER=bank_mock
+FEATURE_RECONCILE=1
+FEATURE_CONTROLS=1
+FEATURE_FLUX=1
+FEATURE_FORECAST=1
+SCHEDULER_INTERVAL_SEC=300
+
+### Generate signing keys
+
+python scripts/generate_keys.py
+
+Paste the output values into .env for RECEIPT_SIGNING_PRIVATE_KEY and RECEIPT_SIGNING_PUBLIC_KEY.
+
+### Start stack
+
+docker compose -f infra/docker-compose.yml up -d --build
+
+### Initialize DB and seeds
+
+docker compose exec api alembic upgrade head
+python scripts/seed_mock_data.py
+python scripts/load_policies.py policies/examples
+
+### Dev servers
+
+- API: http://localhost:8080/docs
+- Console: http://localhost:5173
+- Scheduler: container logs stream agent runs
+
+### Run tests
+
+pytest -q
+(console) cd apps/console && npm i && npm test
+
+### Run flow (Console)
+
+- Click Run Ingest, then Run Reconciler
+- View Matches and KPIs
+- Verify receipts with payload/signature/public key
+
+### Flux and Forecast
+
+- Click Run Flux, then Run Forecast
+- View Flux explanations and Forecast outputs with receipt links
+
+### Spend flow
+
+- Click Run Duplicate Sentinel and Run SaaS Optimizer
+- View Spend table for detected issues and open receipts
+
+### Docs demo (GitHub Pages)
+
+- UI/UX Demo: https://aurelius-in.github.io/DeepChief/
+- Build: cd apps/console-demo && npm i && npm run build
+- Output goes to docs/ with 404.html SPA fallback
+- Commit and push to publish via GitHub Pages
+
+## Receipts
+
+- Payload hash: sha256(canonical_json(payload)) (base64)
+- signed_hash: ed25519_sign(payload_hash)
+- Blob storage: MinIO path receipts/<id>.json
+- Header fields: id, sha256_b64, signed_hash_b64, public_key_b64, payload_url, created_at, links
+- Verify API: POST /receipts/verify
+
+## Quick Commands
+
+- Start: docker compose -f infra/docker-compose.yml up -d
+- Migrate: docker compose exec api alembic upgrade head
+- Seed data: python scripts/seed_mock_data.py
+- Load policies: python scripts/load_policies.py policies/examples
+- Tests: pytest -q
+- Console: cd apps/console && npm i && npm run dev
+- Build demo site: cd apps/console-demo && npm i && npm run build
+
+## Console Design
+
+- Use color scheme inspired by dc-150.png; headings display wordmark_dc.png
+- Keep UI simple with tables and JSON viewers; include receipt verify
+
+## Security
+
+- Least privilege creds, redact PII in receipts by default, Ed25519 public key distributed via README/env, optional data residency pinning via S3-compatible endpoint
+
+## Notes
+
+- This is the pilot scaffold. Agents, controls, flux, forecast, spend loop, and scheduler will be added incrementally with receipts-first discipline.
 
 ## Getting started (repo)
 

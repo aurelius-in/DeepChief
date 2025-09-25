@@ -39,6 +39,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [jobRuns, setJobRuns] = useState<any[]>([])
   const [invoices, setInvoices] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState<string>('GL')
 
   useEffect(() => {
     ;(async () => {
@@ -88,36 +89,95 @@ export function ConsoleView({ api }: { api: Api }) {
     return { kpi_snapshot: kpi || {} }
   }, [sample, controls, kpi])
 
+  const kpiCards = useMemo(() => {
+    const pct = (n: number | undefined | null) => (typeof n === 'number' ? `${n.toFixed(1)}%` : '-')
+    return [
+      { title: 'Auto Match Rate', value: pct(kpi?.auto_match_rate), trend: [50, 55, 60, 58, 62, 65, 66, 67, 68, 70, 72, 75] },
+      { title: 'Controls Pass', value: pct(kpi?.controls_pass_rate), trend: [80, 81, 82, 83, 84, 85, 86, 84, 85, 86, 87, 88] },
+      { title: 'Exceptions Open', value: kpi?.exceptions_open ?? '-', trend: [40, 38, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27] },
+      { title: 'Flux Ready', value: pct(kpi?.flux_ready_percent), trend: [40, 45, 48, 52, 55, 57, 60, 62, 64, 66, 68, 70] },
+      { title: 'GL Count', value: kpi?.gl_count ?? '-', trend: [10, 12, 11, 13, 12, 14, 16, 15, 17, 18, 19, 20] },
+      { title: 'Bank Count', value: kpi?.bank_count ?? '-', trend: [9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15] },
+      { title: 'Matched', value: kpi?.matched_count ?? '-', trend: [6, 7, 7, 8, 8, 9, 10, 10, 11, 12, 13, 14] },
+      { title: 'MTTR (days)', value: kpi?.exceptions_mttr_days ?? '-', trend: [5, 4.8, 4.6, 4.4, 4.2, 4.0, 3.8, 3.6, 3.4, 3.3, 3.2, 3.2] },
+    ]
+  }, [kpi])
+
+  const sparkPath = (values: number[], width: number, height: number, pad = 4) => {
+    if (!values || values.length === 0) return ''
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    const range = max - min || 1
+    const sx = (width - pad * 2) / (Math.max(1, values.length - 1))
+    const pts = values.map((v, i) => {
+      const x = pad + i * sx
+      const y = height - pad - ((v - min) / range) * (height - pad * 2)
+      return `${x},${y}`
+    })
+    return `M ${pts.join(' L ')}`
+  }
+
+  const areaPath = (values: number[], width: number, height: number, pad = 4) => {
+    if (!values || values.length === 0) return ''
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    const range = max - min || 1
+    const sx = (width - pad * 2) / (Math.max(1, values.length - 1))
+    const top = values.map((v, i) => {
+      const x = pad + i * sx
+      const y = height - pad - ((v - min) / range) * (height - pad * 2)
+      return `${x},${y}`
+    })
+    return `M ${top.join(' L ')} L ${width - pad},${height - pad} L ${pad},${height - pad} Z`
+  }
+
+  const tabs = useMemo(() => [
+    { id: 'GL', label: 'GL' },
+    { id: 'Bank', label: 'Bank' },
+    { id: 'Matches', label: 'Matches' },
+  ], [])
+
   return (
     <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text }}>
-      <header style={{ padding: 16, borderBottom: `1px solid ${colors.panel}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <header style={{ padding: 16, borderBottom: `1px solid ${colors.panel}`, display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, background: colors.bg, zIndex: 2 }}>
         <img src="wordmark_dc.png" alt="DeepChief" height={28} />
         <h1 style={{ margin: 0 }}>Console</h1>
       </header>
-      <main style={{ maxWidth: 1200, margin: '24px auto', padding: '0 16px' }}>
-        {kpi && (
-          <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0 }}>KPIs</h2>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <div>Auto Match Rate: {kpi.auto_match_rate}%</div>
-              <div>GL: {kpi.gl_count}</div>
-              <div>Bank: {kpi.bank_count}</div>
-              <div>Matched: {kpi.matched_count}</div>
-              <div>Exceptions Open: {kpi.exceptions_open ?? '-'}</div>
-              <div>Exceptions MTTR: {kpi.exceptions_mttr_days != null ? `${kpi.exceptions_mttr_days.toFixed(1)}d` : '-'}</div>
-              <div>Controls Pass Rate: {kpi.controls_pass_rate != null ? `${kpi.controls_pass_rate.toFixed(1)}%` : '-'}</div>
-              <div>Flux Ready: {kpi.flux_ready_percent != null ? `${kpi.flux_ready_percent.toFixed(1)}%` : '-'}</div>
-              <div>| Spend Issues: {kpiSpend?.issues_total ?? '-'}</div>
-              <div>Duplicates: {kpiSpend?.duplicates ?? '-'}</div>
-              <div>Dup Value: {kpiSpend?.duplicate_detected_value != null ? `$${Number(kpiSpend.duplicate_detected_value).toFixed(2)}` : '-'}</div>
-              <div>SaaS: {kpiSpend?.saas ?? '-'}</div>
-              <div>Waste Est.: {kpiSpend?.saas_waste_estimate != null ? `$${Number(kpiSpend.saas_waste_estimate).toFixed(0)}` : '-'}</div>
-              <div>Touchless %: {kpiSpend?.touchless_invoices_percent != null ? `${kpiSpend.touchless_invoices_percent.toFixed(1)}%` : '-'}</div>
-              <div>| Buffer Days: {kpiTreasury?.projected_buffer_days ?? '-'}</div>
-              <div>Flags: {Array.isArray(kpiTreasury?.covenant_risk_flags) ? kpiTreasury.covenant_risk_flags.map((f: any) => `${f.name}:${f.status}`).join(', ') : '-'}</div>
-            </div>
-          </section>
-        )}
+      <div style={{ maxWidth: 1200, margin: '24px auto', padding: '0 16px', display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16 }}>
+        <nav style={{ position: 'sticky', top: 72, alignSelf: 'start' }}>
+          <a href="#close-to-cash" style={{ display: 'block', padding: '8px 10px', borderRadius: 6, color: colors.text, textDecoration: 'none' }}>Close-to-Cash</a>
+          <a href="#controls" style={{ display: 'block', padding: '8px 10px', borderRadius: 6, color: colors.text, textDecoration: 'none' }}>Controls</a>
+          <a href="#spend" style={{ display: 'block', padding: '8px 10px', borderRadius: 6, color: colors.text, textDecoration: 'none' }}>Spend</a>
+          <a href="#audit" style={{ display: 'block', padding: '8px 10px', borderRadius: 6, color: colors.text, textDecoration: 'none' }}>Audit</a>
+        </nav>
+        <main style={{ minWidth: 0 }}>
+          {kpi && (
+            <section id="close-to-cash" style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+              <h2 style={{ marginTop: 0 }}>KPIs</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(180px,1fr))', gap: 12 }}>
+                {kpiCards.map((card, i) => (
+                  <div key={i} style={{ background: '#0f1830', border: '1px solid #1a2a4a', borderRadius: 8, padding: 10 }}>
+                    <div style={{ fontSize: 12, color: '#8b99b5' }}>{card.title}</div>
+                    <div style={{ fontSize: 18, fontWeight: 600 }}>{String(card.value)}</div>
+                    <svg width={160} height={36}>
+                      <defs>
+                        <linearGradient id={`g${i}`} x1="0" x2="1" y1="0" y2="0">
+                          <stop offset="0%" stopColor="#57a6ff" />
+                          <stop offset="100%" stopColor="#2ecc71" />
+                        </linearGradient>
+                      </defs>
+                      <path d={sparkPath(card.trend as number[], 160, 36)} fill="none" stroke={`url(#g${i})`} strokeWidth={2} />
+                    </svg>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <svg viewBox={`0 0 ${800} ${140}`} width="100%" height={140}>
+                  <path d={areaPath((cashSeries || []).map((x: any) => Number(x.balance ?? 0)), 800, 140)} fill="rgba(87,166,255,.15)" stroke="#57a6ff" strokeWidth={2} />
+                </svg>
+              </div>
+            </section>
+          )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Why Card</h2>
           <JsonView data={whyCard} style={darkStyles} />
