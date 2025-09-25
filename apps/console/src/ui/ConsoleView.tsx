@@ -25,6 +25,8 @@ export function ConsoleView({ api }: { api: Api }) {
   const [kpiSpend, setKpiSpend] = useState<any>(null)
   const [kpiTreasury, setKpiTreasury] = useState<any>(null)
   const [packIds, setPackIds] = useState<string>("")
+  const [policies, setPolicies] = useState<any[]>([])
+  const [verifyId, setVerifyId] = useState<string>("")
 
   useEffect(() => {
     ;(async () => {
@@ -43,6 +45,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setSpend(await api.listSpend()) } catch {}
       try { setKpiSpend(await api.getKpiSpend()) } catch {}
       try { setKpiTreasury(await api.getKpiTreasury()) } catch {}
+      try { setPolicies(await api.listPolicies()) } catch {}
     })()
   }, [api])
 
@@ -86,6 +89,10 @@ export function ConsoleView({ api }: { api: Api }) {
             </div>
           </form>
           {verifyResult && <p>Result: {verifyResult}</p>}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+            <input placeholder="verify by receipt id" value={verifyId} onChange={e => setVerifyId(e.target.value)} />
+            <button onClick={async () => { if (!verifyId.trim()) return; const res = await api.verifyReceiptById(verifyId.trim()); alert(`hash_matches=${res.hash_matches}, signature_valid=${res.signature_valid}`) }}>Verify by ID</button>
+          </div>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Actions</h2>
@@ -102,6 +109,27 @@ export function ConsoleView({ api }: { api: Api }) {
             <input placeholder="receipt ids (comma-separated)" value={packIds} onChange={e => setPackIds(e.target.value)} style={{ minWidth: 260 }} />
             <button onClick={() => { if (packIds.trim()) window.open(`/api/receipts/pack?ids=${encodeURIComponent(packIds.trim())}`, '_blank') }}>Download Receipts Pack</button>
           </div>
+        </section>
+        <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Policies</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th align="left">Key</th>
+                <th align="left">Active</th>
+                <th align="left">Checksum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {policies.map((p, i) => (
+                <tr key={i}>
+                  <td>{p.key}</td>
+                  <td>{String(p.active)}</td>
+                  <td>{p.checksum?.slice(0, 10)}...</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>GL Entries</h2>
