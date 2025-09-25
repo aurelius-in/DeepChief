@@ -97,6 +97,10 @@
             <h2>Matches</h2>
             <table><thead><tr><th align="left">GL Entry</th><th align="left">Bank Txn</th><th align="right">Confidence</th><th align="left">Receipt</th></tr></thead><tbody id="matchBody"></tbody></table>
           </div>
+          <div class="tab-panel" id="panel-controls">
+            <h2>Controls</h2>
+            <table><thead><tr><th align="left">Control</th><th align="left">Window</th><th align="left">Findings</th><th align="left">Receipt</th></tr></thead><tbody id="ctrlBody"></tbody></table>
+          </div>
           <div class="tab-panel" id="panel-flux">
             <h2>Flux</h2>
             <table><thead><tr><th align="left">Entity</th><th align="left">Account</th><th align="left">Period</th><th align="left">Drivers</th><th align="left">Receipt</th></tr></thead><tbody id="fluxBody"></tbody></table>
@@ -179,6 +183,57 @@
         const ap = areaPath(cash.length? cash : [152000,150200,149400,150900,149100,151000,150500,148800,149300,150100,151400,150700,152200,153000], W, H);
         const aPath=document.createElementNS('http://www.w3.org/2000/svg','path'); aPath.setAttribute('d', ap); aPath.setAttribute('fill','rgba(87,166,255,.15)'); aPath.setAttribute('stroke','#57a6ff'); aPath.setAttribute('stroke-width','2'); svg.appendChild(aPath);
 
+        // Controls donut
+        try {
+          const donut = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          donut.setAttribute('width','160'); donut.setAttribute('height','120'); donut.setAttribute('viewBox','0 0 120 120');
+          const pctNum = typeof k.controls_pass_rate === 'number' ? k.controls_pass_rate : (j.kpi?.controls_pass_rate || 0);
+          const pct = Math.max(0, Math.min(100, pctNum));
+          const cx=60, cy=60, r=36, c=2*Math.PI*r, dash=(pct/100)*c;
+          const bg=document.createElementNS('http://www.w3.org/2000/svg','circle'); bg.setAttribute('cx',cx); bg.setAttribute('cy',cy); bg.setAttribute('r',r); bg.setAttribute('fill','none'); bg.setAttribute('stroke','#1a2a4a'); bg.setAttribute('stroke-width','10');
+          const fg=document.createElementNS('http://www.w3.org/2000/svg','circle'); fg.setAttribute('cx',cx); fg.setAttribute('cy',cy); fg.setAttribute('r',r); fg.setAttribute('fill','none'); fg.setAttribute('stroke','#2ecc71'); fg.setAttribute('stroke-width','10'); fg.setAttribute('stroke-dasharray', `${dash} ${c-dash}`); fg.setAttribute('transform',`rotate(-90 ${cx} ${cy})`);
+          const txt=document.createElementNS('http://www.w3.org/2000/svg','text'); txt.setAttribute('x', String(cx)); txt.setAttribute('y', String(cy+5)); txt.setAttribute('text-anchor','middle'); txt.setAttribute('fill','#e6edf6'); txt.textContent = `${pct.toFixed(1)}%`;
+          document.getElementById('panel-controls').appendChild(donut); donut.appendChild(bg); donut.appendChild(fg); donut.appendChild(txt);
+        } catch {}
+
+        // Exceptions histogram
+        try {
+          const ex = Array.isArray(j.exceptions) ? j.exceptions : [];
+          const counts = {};
+          ex.forEach(e => { const t = String(e.type||'other'); counts[t] = (counts[t]||0)+1 });
+          const types = Object.keys(counts).slice(0,6);
+          const maxV = Math.max(1, ...types.map(t=>counts[t]));
+          const svgH = 120, svgW = 260, pad=20, bw = Math.max(12, (svgW - pad*2)/(types.length||1) - 8);
+          const hist=document.createElementNS('http://www.w3.org/2000/svg','svg'); hist.setAttribute('width','260'); hist.setAttribute('height','120'); hist.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+          types.forEach((t,i)=>{
+            const v = counts[t];
+            const h = ((v/maxV) * (svgH - pad*2));
+            const x = pad + i*(bw+8);
+            const y = svgH - pad - h;
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',bw); rect.setAttribute('height',h); rect.setAttribute('fill','#57a6ff');
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x + bw/2)); label.setAttribute('y', String(svgH - 4)); label.setAttribute('text-anchor','middle'); label.setAttribute('fill','#8b99b5'); label.setAttribute('font-size','10'); label.textContent = t;
+            hist.appendChild(rect); hist.appendChild(label);
+          })
+          document.getElementById('panel-exceptions').appendChild(hist)
+        } catch {}
+
+        // Flux waterfall
+        try {
+          const fx = Array.isArray(j.flux) && j.flux[0] ? j.flux[0] : null;
+          const drivers = fx?.drivers || { volume: 0.6, price: 0.3, fx: 0.1 };
+          const vals = Object.entries(drivers).map(([k,v])=>({ key:k, value:Number(v) }));
+          const svgW=260, svgH=120, pad=12, barH=12, gap=10; let x=pad, y=svgH/2;
+          const wf=document.createElementNS('http://www.w3.org/2000/svg','svg'); wf.setAttribute('width','260'); wf.setAttribute('height','120'); wf.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+          vals.forEach(d=>{
+            const w = Math.max(10, Math.abs(d.value)* (svgW - pad*2 - 40));
+            const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x', x); rect.setAttribute('y', String(y - barH/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(barH)); rect.setAttribute('fill', d.value>=0 ? '#2ecc71' : '#e74c3c');
+            const label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('x', String(x + w + 4)); label.setAttribute('y', String(y + 4)); label.setAttribute('fill','#e6edf6'); label.setAttribute('font-size','11'); label.textContent = d.key;
+            wf.appendChild(rect); wf.appendChild(label);
+            y += barH + gap;
+          })
+          document.getElementById('panel-flux').appendChild(wf)
+        } catch {}
+
         // Why chips + drawer
         const why = j.whyCard || { kpi_snapshot: k };
         const chips = document.getElementById('whyChips');
@@ -193,6 +248,7 @@
           { label:'GL', panelId:'panel-gl' },
           { label:'Bank', panelId:'panel-bank' },
           { label:'Matches', panelId:'panel-matches' },
+          { label:'Controls', panelId:'panel-controls' },
           { label:'Flux', panelId:'panel-flux' },
           { label:'Forecast', panelId:'panel-forecast' },
           { label:'Exceptions', panelId:'panel-exceptions' },
