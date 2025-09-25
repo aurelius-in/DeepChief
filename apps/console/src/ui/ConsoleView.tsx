@@ -207,6 +207,82 @@ export function ConsoleView({ api }: { api: Api }) {
                   <path d={areaPath((cashSeries || []).map((x: any) => Number(x.balance ?? 0)), 800, 140)} fill="rgba(87,166,255,.15)" stroke="#57a6ff" strokeWidth={2} />
                 </svg>
               </div>
+              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px,1fr))', gap: 12, alignItems: 'center' }}>
+                {/* Controls pass donut */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Controls Pass</h3>
+                  {(() => {
+                    const pct = typeof kpi?.controls_pass_rate === 'number' ? Math.max(0, Math.min(100, kpi.controls_pass_rate)) : 0
+                    const r = 36
+                    const cx = 60
+                    const cy = 60
+                    const circ = 2 * Math.PI * r
+                    const dash = (pct / 100) * circ
+                    return (
+                      <svg width={160} height={120} viewBox="0 0 120 120">
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1a2a4a" strokeWidth={10} />
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#2ecc71" strokeWidth={10} strokeDasharray={`${dash} ${circ - dash}`} transform={`rotate(-90 ${cx} ${cy})`} />
+                        <text x={cx} y={cy + 5} textAnchor="middle" fill={colors.text} style={{ fontSize: 14 }}>{pct.toFixed(1)}%</text>
+                      </svg>
+                    )
+                  })()}
+                </section>
+                {/* Exceptions histogram */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Exceptions by Type</h3>
+                  {(() => {
+                    const counts: Record<string, number> = {}
+                    ;(exceptions || []).forEach((e: any) => { const t = String(e?.type || 'other'); counts[t] = (counts[t] || 0) + 1 })
+                    const types = Object.keys(counts).slice(0, 6)
+                    const maxV = Math.max(1, ...types.map(t => counts[t]))
+                    const svgW = 260, svgH = 120, pad = 20
+                    const bw = Math.max(12, (svgW - pad * 2) / Math.max(1, types.length) - 8)
+                    return (
+                      <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+                        {types.map((t, i) => {
+                          const v = counts[t]
+                          const h = (v / maxV) * (svgH - pad * 2)
+                          const x = pad + i * (bw + 8)
+                          const y = svgH - pad - h
+                          return (
+                            <g key={t}>
+                              <rect x={x} y={y} width={bw} height={h} fill="#57a6ff" />
+                              <text x={x + bw / 2} y={svgH - 4} textAnchor="middle" fill="#8b99b5" style={{ fontSize: 10 }}>{t}</text>
+                            </g>
+                          )
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+                {/* Flux waterfall */}
+                <section>
+                  <h3 style={{ margin: '0 0 6px 0', fontSize: 14, color: '#8b99b5' }}>Flux Waterfall</h3>
+                  {(() => {
+                    const f = Array.isArray(flux) && flux[0] ? flux[0] : null
+                    const drivers: Record<string, number> = (f?.drivers as any) || { volume: 0.6, price: 0.3, fx: 0.1 }
+                    const rows = Object.entries(drivers).map(([k, v]) => ({ key: k, value: Number(v) }))
+                    const svgW = 260, svgH = 120, pad = 12, barH = 12, gap = 10
+                    let y = svgH / 2
+                    return (
+                      <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+                        {rows.map((d, i) => {
+                          const w = Math.max(10, Math.abs(d.value) * (svgW - pad * 2 - 40))
+                          const x = pad
+                          const el = (
+                            <g key={d.key}>
+                              <rect x={x} y={y - barH / 2} width={w} height={barH} fill={d.value >= 0 ? '#2ecc71' : '#e74c3c'} />
+                              <text x={x + w + 4} y={y + 4} fill={colors.text} style={{ fontSize: 11 }}>{d.key}</text>
+                            </g>
+                          )
+                          y += barH + gap
+                          return el
+                        })}
+                      </svg>
+                    )
+                  })()}
+                </section>
+              </div>
             </section>
           )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>
