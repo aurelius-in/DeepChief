@@ -98,13 +98,25 @@ def bytes_to_stream(data: bytes):
     return BytesIO(data)
 
 
+SENSITIVE_KEYS = {"ssn", "tax_id", "email", "phone", "account_number", "iban"}
+
+
+def _redact(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {k: ("[redacted]" if k in SENSITIVE_KEYS else _redact(v)) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_redact(v) for v in obj]
+    return obj
+
+
 def create_receipt(payload: Dict[str, Any], kind: str, links: Dict[str, Any]) -> Dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     receipt_id = str(uuid.uuid4())
     signature = sign_payload(payload)
 
+    safe_payload = _redact(payload)
     object_name = f"receipts/{receipt_id}.json"
-    payload_url = _minio_put_object(object_name, canonical_json(payload))
+    payload_url = _minio_put_object(object_name, canonical_json(safe_payload))
 
     header = {
         "id": receipt_id,
