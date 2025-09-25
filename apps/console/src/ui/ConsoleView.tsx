@@ -34,6 +34,7 @@ export function ConsoleView({ api }: { api: Api }) {
   const [offset, setOffset] = useState<number>(0)
   const [proposeMode, setProposeMode] = useState<boolean>(false)
   const [kpiAudit, setKpiAudit] = useState<any>(null)
+  const [kpiDQ, setKpiDQ] = useState<any>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -55,6 +56,7 @@ export function ConsoleView({ api }: { api: Api }) {
       try { setPolicies(await api.listPolicies()) } catch {}
       try { const cash = await api.getTreasuryCash(14); setCashSeries(cash?.series || []) } catch {}
       try { setKpiAudit(await api.getKpiAudit()) } catch {}
+      try { setKpiDQ(await api.getKpiDQ()) } catch {}
     })()
   }, [api, limit, offset])
 
@@ -180,10 +182,15 @@ export function ConsoleView({ api }: { api: Api }) {
             </tbody>
           </table>
         </section>
-        {kpiAudit && (
+        {(kpiAudit || kpiDQ) && (
           <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginTop: 16 }}>
             <h2 style={{ marginTop: 0 }}>Audit</h2>
-            <div>Receipts Total: {kpiAudit.receipts_total}</div>
+            {kpiAudit && <div>Receipts Total: {kpiAudit.receipts_total}</div>}
+            {kpiDQ && (
+              <div style={{ marginTop: 8 }}>
+                <strong>DQ Freshness</strong>: GL {kpiDQ.gl_days_since ?? '-'}d, Bank {kpiDQ.bank_days_since ?? '-'}d
+              </div>
+            )}
           </section>
         )}
         <section style={{ background: colors.panel, padding: 16, borderRadius: 8, marginBottom: 16 }}>

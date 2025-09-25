@@ -13,6 +13,7 @@ from ..models.spend_issue import SpendIssue
 from ..models.exception_case import ExceptionCase
 from ..models.control_run import ControlRun
 from ..models.evidence_receipt import EvidenceReceipt
+from ..models.job_run import JobRun
 
 
 router = APIRouter(prefix="/kpi", tags=["kpi"])
@@ -100,6 +101,21 @@ def kpi_audit() -> dict[str, Any]:
             "receipts_total": receipts_total,
             "receipts_by_type": receipts_by_type,
             "pbc_served": 0,
+        }
+    finally:
+        sess.close()
+
+
+@router.get("/dq")
+def kpi_dq() -> dict[str, Any]:
+    sess = _session()
+    try:
+        # Pull latest DQ job run outputs if present
+        jr = sess.query(JobRun).filter(JobRun.agent == 'dq_sentinel').order_by(JobRun.id.desc()).first()
+        outputs = jr.outputs if jr else {}
+        return {
+            "gl_days_since": outputs.get("gl_days_since"),
+            "bank_days_since": outputs.get("bank_days_since"),
         }
     finally:
         sess.close()

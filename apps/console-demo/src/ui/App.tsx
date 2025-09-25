@@ -32,6 +32,7 @@ const demoApi = {
   async verifyReceiptById(receiptId: string) { return { receipt_id: receiptId, hash_matches: true, signature_valid: true } },
   async getTreasuryCash(days: number = 14) { const j = await loadState(); const s = (j.cash && Array.isArray(j.cash.series)) ? j.cash.series : []; return { series: s.slice(0, days) } },
   async getKpiAudit() { const j = await loadState(); return j.kpi_audit ?? { receipts_total: 0 } },
+  async getKpiDQ() { const j = await loadState(); return j.kpi_dq ?? { gl_days_since: 1, bank_days_since: 1 } },
   async runDQ() { return { ok: true, job_run_id: 'demo-dq-1' } },
 }
 

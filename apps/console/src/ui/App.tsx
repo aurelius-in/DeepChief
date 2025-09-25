@@ -102,6 +102,10 @@ const api = {
     const r = await fetch('/api/kpi/audit')
     return r.json()
   },
+  async getKpiDQ() {
+    const r = await fetch('/api/kpi/dq')
+    return r.json()
+  },
   async runDQ() {
     const r = await fetch('/api/agents/dq_sentinel/run', { method: 'POST' })
     return r.json()
