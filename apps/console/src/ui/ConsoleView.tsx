@@ -402,17 +402,31 @@ export function ConsoleView({ api }: { api: Api }) {
             <input placeholder="receipt ids (comma-separated)" value={packIds} onChange={e => setPackIds(e.target.value)} style={{ minWidth: 260 }} />
             <button onClick={() => { if (packIds.trim()) window.open(`/api/receipts/pack?ids=${encodeURIComponent(packIds.trim())}`, '_blank') }}>Download Receipts Pack</button>
             <span>|</span>
-            <a href={`/api/gl_entries.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">GL CSV</a>
-            <a href={`/api/bank_txns.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Bank CSV</a>
-            <a href={`/api/matches.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Matches CSV</a>
-            <a href={`/api/flux/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer" style={{ display: 'none' }} />
-            <a href={`/api/exceptions.csv?limit=${limit}&offset=${offset}${exceptionStatusFilter ? `&status=${encodeURIComponent(exceptionStatusFilter)}` : ''}`} target="_blank" rel="noreferrer">Exceptions CSV</a>
-            <a href={`/api/controls/latest.csv?limit=${limit}`} target="_blank" rel="noreferrer">Controls CSV</a>
-            <a href={`/api/flux/flux.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Flux CSV</a>
-            <a href={`/api/forecast/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Forecast CSV</a>
-            <a href={`/api/spend/spend.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Spend CSV</a>
-            <a href={`/api/apps/billing/invoices.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Invoices CSV</a>
-            <a href={`/api/apps/hris/employees.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Employees CSV</a>
+            {/* CSV for current tab */}
+            {activeTab === 'GL' && (
+              <a href={`/api/gl_entries.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (GL)</a>
+            )}
+            {activeTab === 'Bank' && (
+              <a href={`/api/bank_txns.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Bank)</a>
+            )}
+            {activeTab === 'Matches' && (
+              <a href={`/api/matches.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Matches)</a>
+            )}
+            {activeTab === 'Flux' && (
+              <a href={`/api/flux/flux.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Flux)</a>
+            )}
+            {activeTab === 'Forecast' && (
+              <a href={`/api/forecast/forecast.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Forecast)</a>
+            )}
+            {activeTab === 'Exceptions' && (
+              <a href={`/api/exceptions.csv?limit=${limit}&offset=${offset}${exceptionStatusFilter ? `&status=${encodeURIComponent(exceptionStatusFilter)}` : ''}`} target="_blank" rel="noreferrer">Download CSV (Exceptions)</a>
+            )}
+            {activeTab === 'Policies' && (
+              <a href={`/api/controls/latest.csv?limit=${limit}`} target="_blank" rel="noreferrer">Download CSV (Controls Latest)</a>
+            )}
+            {activeTab === 'Spend' && (
+              <a href={`/api/spend/spend.csv?limit=${limit}&offset=${offset}`} target="_blank" rel="noreferrer">Download CSV (Spend)</a>
+            )}
             <span>|</span>
             <span>Page:</span>
             <input type="number" min={1} value={Math.floor(offset / Math.max(1, limit)) + 1}
